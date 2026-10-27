@@ -1,0 +1,61 @@
+import type { StyleProp, ViewStyle } from 'react-native';
+
+import type { CalendarType, Digits, Locale } from '../core/locale';
+import type { HijriDate } from '../core/types';
+import type { ThemeProp } from './theme';
+
+/** A day picked in the calendar, in both calendars. */
+export type SelectedDate = {
+  /** Local midnight of the day. */
+  gregorian: Date;
+  hijri: HijriDate;
+  /** Both dates as text in the calendar's locale and digits. */
+  formatted: { gregorian: string; hijri: string };
+};
+
+export type HilalCalendarProps = {
+  /** Selected day (controlled). Only the local calendar day is used. */
+  value?: Date;
+  /** Initially selected day (uncontrolled). */
+  defaultValue?: Date;
+  /** Called when the user picks a day. */
+  onChange?: (date: SelectedDate) => void;
+
+  /** Calendar of the month grid. Default 'hijri'. */
+  calendar?: CalendarType;
+  /** Called when the user switches calendars with the toggle. */
+  onCalendarChange?: (calendar: CalendarType) => void;
+  /** Show the Hijri / Gregorian toggle. Default true. */
+  showCalendarToggle?: boolean;
+  /** Show the other calendar's day under each day. Default true. */
+  showSecondaryDate?: boolean;
+
+  /** Language of names and labels. Default 'ar'. */
+  locale?: Locale;
+  /** Default 'arabic' when locale is 'ar', otherwise 'latin'. */
+  digits?: Digits;
+  /**
+   * Layout direction. 'auto' (default) is right-to-left when the app runs
+   * right-to-left (`I18nManager.isRTL`) or the locale is 'ar'.
+   */
+  direction?: 'rtl' | 'ltr' | 'auto';
+  /** 0 = Sunday (default), 1 = Monday, 6 = Saturday. */
+  firstDayOfWeek?: 0 | 1 | 6;
+
+  /** Earliest selectable day. */
+  minDate?: Date;
+  /** Latest selectable day. */
+  maxDate?: Date;
+  /** Return true to disable a day. */
+  isDateDisabled?: (date: SelectedDate) => boolean;
+
+  /**
+   * 'light', 'dark', 'auto' (default, follows the system color scheme),
+   * or a partial theme merged over the 'auto' theme.
+   */
+  theme?: ThemeProp;
+  /** Style of the outer container. */
+  style?: StyleProp<ViewStyle>;
+  /** Style of every day cell (the pressable circle). */
+  dayStyle?: StyleProp<ViewStyle>;
+};
