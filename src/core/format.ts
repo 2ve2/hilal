@@ -6,6 +6,7 @@ import {
   type Digits,
   type Locale,
 } from './locale';
+import type { CivilDate } from './days';
 import type { HijriDate } from './types';
 
 export type FormatHijriOptions = {
@@ -42,5 +43,23 @@ export function formatHijri(
     month,
     formatNumber(hijri.year, digits),
     ERA[locale],
+  ].join(' ');
+}
+
+/**
+ * Formats a Gregorian date as "day month year", for example
+ * "١١ مارس ٢٠٢٤" or "11 March 2024". Internal: used by the calendar.
+ */
+export function formatGregorian(
+  date: CivilDate,
+  options: FormatHijriOptions = {}
+): string {
+  const locale = options.locale ?? 'ar';
+  const digits = options.digits ?? defaultDigits(locale);
+  const month = getMonthNames('gregorian', locale)[date.month - 1];
+  return [
+    formatNumber(date.day, digits),
+    month,
+    formatNumber(date.year, digits),
   ].join(' ');
 }

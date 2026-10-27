@@ -56,3 +56,9 @@ export function localDateOfEpochDay(epochDay: number) {
   const { year, month, day } = civilFromDays(epochDay);
   return new Date(year, month - 1, day);
 }
+
+/** Day of the week of an epoch day, 0 = Sunday (like `Date#getDay()`). */
+export function weekdayOfEpochDay(epochDay: number) {
+  // 1970-01-01 was a Thursday.
+  return (((epochDay + 4) % 7) + 7) % 7;
+}

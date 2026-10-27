@@ -29,8 +29,9 @@ const MONTH_STARTS: readonly number[] = (() => {
   return starts;
 })();
 
-const FIRST_DAY = MONTH_STARTS[0]!;
-const END_DAY = MONTH_STARTS[MONTH_STARTS.length - 1]!; // exclusive
+/** First and last epoch day of the supported range (both inclusive). */
+export const FIRST_DAY = MONTH_STARTS[0]!;
+export const LAST_DAY = MONTH_STARTS[MONTH_STARTS.length - 1]! - 1;
 
 function monthIndex(year: number, month: number) {
   return (year - UMALQURA_MIN_YEAR) * 12 + (month - 1);
@@ -46,7 +47,7 @@ function supportedRangeText() {
   return (
     `${formatIso(min)} to ${formatIso(max)} AH ` +
     `(${formatIso(civilFromDays(FIRST_DAY))} to ` +
-    `${formatIso(civilFromDays(END_DAY - 1))})`
+    `${formatIso(civilFromDays(LAST_DAY))})`
   );
 }
 
@@ -108,20 +109,19 @@ export function isValidHijri(hijri: HijriDate): boolean {
 }
 
 /**
- * Converts the local calendar day of `date` to a Hijri date. The time of
- * day and the time zone offset are ignored: 23:59 and 00:00 on the same
- * local day give the same result.
+ * Hijri date of an epoch day. Internal: the public entry point is
+ * `toHijri`.
  *
- * @throws {RangeError} if `date` is invalid or outside the supported range.
+ * @throws {RangeError} if the day is outside the supported range.
  */
-export function toHijri(date: Date): HijriDate {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-    throw new RangeError('toHijri: expected a valid Date');
-  }
-  const epochDay = epochDayOfLocalDate(date);
-  if (epochDay < FIRST_DAY || epochDay >= END_DAY) {
+export function hijriOfEpochDay(epochDay: number, caller = 'toHijri') {
+  if (
+    !Number.isInteger(epochDay) ||
+    epochDay < FIRST_DAY ||
+    epochDay > LAST_DAY
+  ) {
     throw new RangeError(
-      `toHijri: ${formatIso(civilFromDays(epochDay))} is outside the ` +
+      `${caller}: ${formatIso(civilFromDays(epochDay))} is outside the ` +
         `supported range ${supportedRangeText()}`
     );
   }
@@ -146,6 +146,41 @@ export function toHijri(date: Date): HijriDate {
 }
 
 /**
+ * Epoch day of a Hijri date. Internal: the public entry point is
+ * `toGregorian`.
+ *
+ * @throws {RangeError} if `hijri` is not a valid date in the supported
+ * range.
+ */
+export function epochDayOfHijri(hijri: HijriDate, caller = 'toGregorian') {
+  if (!isValidHijri(hijri)) {
+    const text =
+      typeof hijri === 'object' && hijri !== null
+        ? `${hijri.year}-${hijri.month}-${hijri.day}`
+        : String(hijri);
+    throw new RangeError(
+      `${caller}: ${text} is not a valid Hijri date in the supported ` +
+        `range ${supportedRangeText()}`
+    );
+  }
+  return MONTH_STARTS[monthIndex(hijri.year, hijri.month)]! + hijri.day - 1;
+}
+
+/**
+ * Converts the local calendar day of `date` to a Hijri date. The time of
+ * day and the time zone offset are ignored: 23:59 and 00:00 on the same
+ * local day give the same result.
+ *
+ * @throws {RangeError} if `date` is invalid or outside the supported range.
+ */
+export function toHijri(date: Date): HijriDate {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    throw new RangeError('toHijri: expected a valid Date');
+  }
+  return hijriOfEpochDay(epochDayOfLocalDate(date));
+}
+
+/**
  * Converts a Hijri date to a `Date` at local midnight of the matching
  * Gregorian day.
  *
@@ -153,17 +188,5 @@ export function toHijri(date: Date): HijriDate {
  * range.
  */
 export function toGregorian(hijri: HijriDate): Date {
-  if (!isValidHijri(hijri)) {
-    const text =
-      typeof hijri === 'object' && hijri !== null
-        ? `${hijri.year}-${hijri.month}-${hijri.day}`
-        : String(hijri);
-    throw new RangeError(
-      `toGregorian: ${text} is not a valid Hijri date in the supported ` +
-        `range ${supportedRangeText()}`
-    );
-  }
-  const epochDay =
-    MONTH_STARTS[monthIndex(hijri.year, hijri.month)]! + hijri.day - 1;
-  return localDateOfEpochDay(epochDay);
+  return localDateOfEpochDay(epochDayOfHijri(hijri));
 }
