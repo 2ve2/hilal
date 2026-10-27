@@ -138,11 +138,13 @@ export function HilalCalendar({
 }: HilalCalendarProps) {
   const digits = digitsProp ?? defaultDigits(locale);
   const labels = LABELS[locale];
+  // React Native Web leaves I18nManager.isRTL undefined, not false.
+  const appRTL = I18nManager.isRTL === true;
   const rtl =
     direction === 'rtl' ||
-    (direction === 'auto' && (I18nManager.isRTL || locale === 'ar'));
+    (direction === 'auto' && (appRTL || locale === 'ar'));
   // React Native already mirrors 'row' when the whole app is RTL.
-  const row = rtl === I18nManager.isRTL ? 'row' : 'row-reverse';
+  const row = rtl === appRTL ? 'row' : 'row-reverse';
 
   const colorScheme = useColorScheme();
   const themeKey =
