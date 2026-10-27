@@ -1,6 +1,6 @@
 {
   "name": "react-native-hilal",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Hijri (Umm al-Qura) and Gregorian date picker for React Native. Cross-platform, Expo Go ready, zero dependencies.",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
@@ -38,7 +38,7 @@
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "test": "jest",
-    "release": "release-it --only-version",
+    "release": "release-it",
     "generate:umalqura": "node scripts/generate-umalqura-table.ts && prettier --write src/core/umalqura-data.ts"
   },
   "keywords": [
@@ -147,19 +147,32 @@
   "release-it": {
     "git": {
       "commitMessage": "chore: release ${version}",
-      "tagName": "v${version}"
+      "requireBranch": "release/*",
+      "requireCleanWorkingDir": true,
+      "requireUpstream": false,
+      "tag": false,
+      "push": true
+    },
+    "hooks": {
+      "before:init": [
+        "yarn lint",
+        "yarn typecheck",
+        "yarn test"
+      ]
     },
     "npm": {
-      "publish": true
+      "publish": false
     },
     "github": {
-      "release": true
+      "release": false
     },
     "plugins": {
       "@release-it/conventional-changelog": {
         "preset": {
-          "name": "angular"
-        }
+          "name": "conventionalcommits"
+        },
+        "infile": "CHANGELOG.md",
+        "header": "# Changelog"
       }
     }
   },
