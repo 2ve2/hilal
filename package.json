@@ -140,7 +140,8 @@
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
-    ]
+    ],
+    "globalSetup": "<rootDir>/jest.global-setup.js"
   },
   "release-it": {
     "git": {
