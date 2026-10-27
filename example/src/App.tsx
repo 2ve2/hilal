@@ -14,6 +14,8 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 
+import type { Locale } from 'react-native-hilal';
+
 import { DEMOS } from './demos';
 
 const light = {
@@ -52,6 +54,7 @@ function Showcase() {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const [demoId, setDemoId] = useState(DEMOS[0]!.id);
+  const [locale, setLocale] = useState<Locale>('ar');
   const demo = DEMOS.find((d) => d.id === demoId) ?? DEMOS[0]!;
   const isDark =
     demo.dark === 'always' || (demo.dark === 'auto' && scheme === 'dark');
@@ -68,7 +71,7 @@ function Showcase() {
       >
         <View style={styles.hero}>
           <Crescent color={colors.accent} background={colors.page} />
-          <View>
+          <View style={styles.heroText}>
             <Text style={[styles.brand, { color: colors.text }]}>
               Hilal <Text style={{ color: colors.accent }}>هلال</Text>
             </Text>
@@ -76,6 +79,34 @@ function Showcase() {
               Hijri & Gregorian date picker for React Native
             </Text>
           </View>
+        </View>
+
+        {/* Language of every demo: Arabic (the library default) or English. */}
+        <View style={[styles.languages, { borderColor: colors.chipBorder }]}>
+          {(['ar', 'en'] as const).map((option) => {
+            const active = option === locale;
+            return (
+              <Pressable
+                key={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                onPress={() => setLocale(option)}
+                style={[
+                  styles.language,
+                  active && { backgroundColor: colors.text },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.languageText,
+                    { color: active ? colors.page : colors.muted },
+                  ]}
+                >
+                  {option === 'ar' ? 'العربية' : 'English'}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <View style={styles.chips}>
@@ -101,7 +132,7 @@ function Showcase() {
                     { color: active ? colors.page : colors.chipText },
                   ]}
                 >
-                  {d.title}
+                  {d.title(locale)}
                 </Text>
               </Pressable>
             );
@@ -109,11 +140,11 @@ function Showcase() {
         </View>
 
         <Text style={[styles.description, { color: colors.muted }]}>
-          {demo.description}
+          {demo.description(locale)}
         </Text>
 
         {/* Remount per demo so each one starts from its own defaults. */}
-        <demo.Component key={demo.id} />
+        <demo.Component key={`${demo.id}-${locale}`} locale={locale} />
 
         <View
           style={[
@@ -122,7 +153,7 @@ function Showcase() {
           ]}
         >
           <Text style={[styles.codeText, { color: colors.codeText }]}>
-            {demo.code}
+            {demo.code(locale)}
           </Text>
         </View>
       </ScrollView>
@@ -174,6 +205,26 @@ const styles = StyleSheet.create({
     top: -6,
     width: 44,
     start: 12,
+  },
+  heroText: {
+    flex: 1,
+  },
+  languages: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 14,
+    padding: 3,
+  },
+  language: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+  },
+  languageText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   brand: {
     fontSize: 28,

@@ -1,16 +1,39 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { HilalCalendar, type SelectedDate } from 'react-native-hilal';
+import {
+  HilalCalendar,
+  type Locale,
+  type SelectedDate,
+} from 'react-native-hilal';
 
 export type Demo = {
   id: string;
-  title: string;
-  description: string;
+  title: (locale: Locale) => string;
+  description: (locale: Locale) => string;
   /** Whether the page should switch to its dark palette for this demo. */
   dark?: 'always' | 'auto';
-  code: string;
-  Component: () => React.JSX.Element;
+  /** The JSX shown under the demo, for the page's language. */
+  code: (locale: Locale) => string;
+  Component: (props: { locale: Locale }) => React.JSX.Element;
 };
+
+/**
+ * `<HilalCalendar ... />` with the given props, plus `locale="en"` when the
+ * page is in English (Arabic is the default and needs no prop).
+ */
+function jsx(locale: Locale, props: string[] = []) {
+  const all = locale === 'en' ? ['locale="en"', ...props] : props;
+  if (all.length === 0) {
+    return '<HilalCalendar />';
+  }
+  if (all.length === 1 && !all[0]!.includes('\n')) {
+    return `<HilalCalendar ${all[0]} />`;
+  }
+  const lines = all.map((prop) => `  ${prop.replace(/\n/g, '\n  ')}`);
+  return `<HilalCalendar\n${lines.join('\n')}\n/>`;
+}
+
+const other = (locale: Locale): Locale => (locale === 'ar' ? 'en' : 'ar');
 
 function startOfToday() {
   const now = new Date();
@@ -34,11 +57,15 @@ const sand = {
   radius: 24,
 };
 
-function ControlledDemo() {
+function ControlledDemo({ locale }: { locale: Locale }) {
   const [date, setDate] = useState<SelectedDate>();
   return (
     <View>
-      <HilalCalendar value={date?.gregorian} onChange={setDate} />
+      <HilalCalendar
+        locale={locale}
+        value={date?.gregorian}
+        onChange={setDate}
+      />
       <View style={styles.output}>
         {date ? (
           <>
@@ -70,72 +97,82 @@ function Output({ label, value }: { label: string; value: string }) {
 export const DEMOS: Demo[] = [
   {
     id: 'default',
-    title: 'Default',
-    description:
-      'Hijri grid, Arabic, Arabic-Indic digits, right-to-left, theme follows the system.',
+    title: () => 'Default',
+    description: (locale) =>
+      locale === 'ar'
+        ? 'Hijri grid, Arabic, Arabic-Indic digits, right-to-left, theme follows the system.'
+        : 'Hijri grid, English names, Latin digits, theme follows the system.',
     dark: 'auto',
-    code: '<HilalCalendar />',
-    Component: () => <HilalCalendar />,
+    code: (locale) => jsx(locale),
+    Component: ({ locale }) => <HilalCalendar locale={locale} />,
   },
   {
-    id: 'english',
-    title: 'English',
-    description: 'English names with Latin digits, laid out left-to-right.',
+    // The other language: English on the Arabic page, Arabic on the English
+    // page.
+    id: 'language',
+    title: (locale) => (locale === 'ar' ? 'English' : 'Arabic'),
+    description: (locale) =>
+      locale === 'ar'
+        ? 'English names with Latin digits, laid out left-to-right.'
+        : 'Arabic names with Arabic-Indic digits, laid out right-to-left.',
     dark: 'auto',
-    code: '<HilalCalendar locale="en" />',
-    Component: () => <HilalCalendar locale="en" />,
+    code: (locale) => `<HilalCalendar locale="${other(locale)}" />`,
+    Component: ({ locale }) => <HilalCalendar locale={other(locale)} />,
   },
   {
     id: 'dark',
-    title: 'Dark',
-    description: 'The built-in dark theme, regardless of the system setting.',
+    title: () => 'Dark',
+    description: () =>
+      'The built-in dark theme, regardless of the system setting.',
     dark: 'always',
-    code: '<HilalCalendar theme="dark" />',
-    Component: () => <HilalCalendar theme="dark" />,
+    code: (locale) => jsx(locale, ['theme="dark"']),
+    Component: ({ locale }) => <HilalCalendar locale={locale} theme="dark" />,
   },
   {
     id: 'custom',
-    title: 'Custom colors',
-    description:
+    title: () => 'Custom colors',
+    description: () =>
       'A partial theme is merged over the default, here with round days.',
-    code: `<HilalCalendar
-  theme={{
-    background: '${sand.background}',
-    primary: '${sand.primary}',
-    today: '${sand.today}',
-    border: '${sand.border}',
-    radius: ${sand.radius},
-  }}
-/>`,
-    Component: () => <HilalCalendar theme={sand} />,
+    code: (locale) =>
+      jsx(locale, [
+        `theme={{
+  background: '${sand.background}',
+  primary: '${sand.primary}',
+  today: '${sand.today}',
+  border: '${sand.border}',
+  radius: ${sand.radius},
+}}`,
+      ]),
+    Component: ({ locale }) => <HilalCalendar locale={locale} theme={sand} />,
   },
   {
     id: 'range',
-    title: 'Min / max',
-    description:
+    title: () => 'Min / max',
+    description: () =>
       'Only the next 30 days can be picked; the arrows stop at the edges.',
     dark: 'auto',
-    code: `<HilalCalendar
-  minDate={today}
-  maxDate={in30Days}
-/>`,
-    Component: () => <HilalCalendar minDate={today} maxDate={in30Days} />,
+    code: (locale) => jsx(locale, ['minDate={today}', 'maxDate={in30Days}']),
+    Component: ({ locale }) => (
+      <HilalCalendar locale={locale} minDate={today} maxDate={in30Days} />
+    ),
   },
   {
     id: 'fridays',
-    title: 'No Fridays',
-    description:
+    title: () => 'No Fridays',
+    description: () =>
       'isDateDisabled turns Fridays off; the week starts on Saturday and the grid is Gregorian.',
     dark: 'auto',
-    code: `<HilalCalendar
-  calendar="gregorian"
-  firstDayOfWeek={6}
-  isDateDisabled={({ gregorian }) =>
-    gregorian.getDay() === 5
-  }
-/>`,
-    Component: () => (
+    code: (locale) =>
+      jsx(locale, [
+        'calendar="gregorian"',
+        'firstDayOfWeek={6}',
+        `isDateDisabled={({ gregorian }) =>
+  gregorian.getDay() === 5
+}`,
+      ]),
+    Component: ({ locale }) => (
       <HilalCalendar
+        locale={locale}
         calendar="gregorian"
         firstDayOfWeek={6}
         isDateDisabled={isFriday}
@@ -144,15 +181,13 @@ export const DEMOS: Demo[] = [
   },
   {
     id: 'controlled',
-    title: 'Controlled',
-    description: 'The parent owns the value; everything onChange returns:',
+    title: () => 'Controlled',
+    description: () =>
+      'The parent owns the value; everything onChange returns:',
     dark: 'auto',
-    code: `const [date, setDate] = useState<SelectedDate>();
-
-<HilalCalendar
-  value={date?.gregorian}
-  onChange={setDate}
-/>`,
+    code: (locale) =>
+      `const [date, setDate] = useState<SelectedDate>();\n\n` +
+      jsx(locale, ['value={date?.gregorian}', 'onChange={setDate}']),
     Component: ControlledDemo,
   },
 ];
