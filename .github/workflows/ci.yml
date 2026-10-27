@@ -2,7 +2,7 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - '**'
   pull_request:
     branches:
       - main
@@ -40,6 +40,16 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup
+
+      # The test suite checks every day against ICU's Umm al-Qura calendar,
+      # so it needs a Node.js build with full ICU (official builds have it).
+      - name: Check ICU
+        run: |
+          node -p "process.versions.node + ' / ICU ' + process.versions.icu"
+          node -e "
+            const c = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura').resolvedOptions().calendar;
+            if (c !== 'islamic-umalqura') { console.error('No islamic-umalqura calendar in this Node build'); process.exit(1); }
+          "
 
       - name: Run unit tests
         run: yarn test --maxWorkers=2 --coverage
