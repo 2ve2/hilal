@@ -1,0 +1,27 @@
+name: 💡 Feature request
+description: Suggest an idea for Hilal.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Some ideas are already planned. Please check the [roadmap](https://github.com/2ve2/hilal#roadmap) first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would it solve?
+      description: "Describe the use case: what you're building, and what you can't do today."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How you'd like it to work. A sketch of the props or the API is welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you tried, or other approaches.
