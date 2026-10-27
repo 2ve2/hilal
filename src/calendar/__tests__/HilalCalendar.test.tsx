@@ -12,7 +12,7 @@ import {
   screen,
   within,
 } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
+import { I18nManager, StyleSheet } from 'react-native';
 
 import { HilalCalendar } from '../HilalCalendar';
 import { lightTheme } from '../theme';
@@ -187,6 +187,40 @@ describe('HilalCalendar', () => {
       await render(<HilalCalendar defaultValue={MARCH_25} direction="ltr" />);
       expect(flexDirection()).toBe('row');
       expect(points(arrows().previous)).toBe('left');
+    });
+
+    describe('app direction (I18nManager.isRTL)', () => {
+      const original = Object.getOwnPropertyDescriptor(I18nManager, 'isRTL');
+      const setAppRTL = (value: boolean | undefined) =>
+        Object.defineProperty(I18nManager, 'isRTL', {
+          configurable: true,
+          get: () => value,
+        });
+      afterEach(() => {
+        Object.defineProperty(I18nManager, 'isRTL', original!);
+      });
+
+      it('treats undefined (React Native Web) as left-to-right', async () => {
+        setAppRTL(undefined);
+        await render(<HilalCalendar defaultValue={MARCH_25} locale="en" />);
+        expect(flexDirection()).toBe('row');
+        expect(points(arrows().previous)).toBe('left');
+      });
+
+      it('relies on React Native mirroring rows in an RTL app', async () => {
+        setAppRTL(true);
+        await render(<HilalCalendar defaultValue={MARCH_25} />);
+        // 'row' is already right-to-left in an RTL app.
+        expect(flexDirection()).toBe('row');
+        expect(points(arrows().previous)).toBe('right');
+      });
+
+      it('reverses rows for an LTR calendar in an RTL app', async () => {
+        setAppRTL(true);
+        await render(<HilalCalendar defaultValue={MARCH_25} direction="ltr" />);
+        expect(flexDirection()).toBe('row-reverse');
+        expect(points(arrows().previous)).toBe('left');
+      });
     });
   });
 
