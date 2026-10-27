@@ -1,115 +1,95 @@
 # Contributing
 
-Contributions are always welcome, no matter how large or small!
+Contributions are welcome, from typo fixes to new features. Please read the [code of conduct](CODE_OF_CONDUCT.md) first.
 
-We want this community to be friendly and respectful to each other. Please follow it in all your interactions with the project. Before contributing, please read the [code of conduct](./CODE_OF_CONDUCT.md).
+For anything bigger than a small fix, open an issue to discuss it before writing code. Ideas already planned are listed in the [roadmap](README.md#roadmap).
 
-## Development workflow
+## Setup
 
-This project is a monorepo managed using [Yarn workspaces](https://yarnpkg.com/features/workspaces). It contains the following packages:
+The repository is a Yarn workspace with two packages:
 
-- The library package in the root directory.
-- An example app in the `example/` directory.
+- the library, in the root directory
+- an Expo example app, in [`example/`](example), which uses the library's source directly
 
-To get started with the project, make sure you have the correct version of [Node.js](https://nodejs.org/) installed. See the [`.nvmrc`](./.nvmrc) file for the version used in this project.
-
-Run `yarn` in the root directory to install the required dependencies for each package:
+Use the Node.js version in [`.nvmrc`](.nvmrc). It must be an official build with full ICU, which the default downloads from nodejs.org are. The tests compare the library with ICU's Umm al-Qura calendar.
 
 ```sh
+git clone https://github.com/2ve2/hilal.git
+cd hilal
+corepack enable   # or run node .yarn/releases/yarn-*.cjs in place of yarn
 yarn
 ```
 
-> Since the project relies on Yarn workspaces, you cannot use [`npm`](https://github.com/npm/cli) for development without manually migrating.
+Yarn is pinned in the repository, so npm is not used for development.
 
-The [example app](/example/) demonstrates usage of the library. You need to run it to test any changes you make.
+## Commands
 
-It is configured to use the local version of the library, so any changes you make to the library's source code will be reflected in the example app. Changes to the library's JavaScript code will be reflected in the example app without a rebuild, but native code changes will require a rebuild of the example app.
+| Command                  | What it does                                               |
+| ------------------------ | ---------------------------------------------------------- |
+| `yarn test`              | Unit and component tests (Jest)                            |
+| `yarn typecheck`         | TypeScript                                                 |
+| `yarn lint`              | ESLint and Prettier (`yarn lint --fix` to fix)             |
+| `yarn prepare`           | Build the library into `lib/`                              |
+| `yarn example start`     | Start the example app (Expo Go, simulator, or `w` for web) |
+| `yarn generate:umalqura` | Regenerate `src/core/umalqura-data.ts` from Node's ICU     |
 
-You can use various commands from the root directory to work with the project.
+Changes to `src/` show up in the running example app right away.
 
-To start the packager:
+## Project structure
 
-```sh
-yarn example start
+```
+src/
+  core/        Conversion and formatting, no React (public API)
+  calendar/    The <HilalCalendar /> component, its model and themes
+scripts/       Generator for the Umm al-Qura table
+example/       Expo example app
 ```
 
-To run the example app on Android:
+## Tests
 
-```sh
-yarn example android
+- **Every day is checked against ICU.** `src/core/__tests__/icu-cross-check.test.ts` compares the library with Node's `islamic-umalqura` calendar for every day from 1937 to 2077. If it fails, the table or the conversion is wrong. Don't edit `umalqura-data.ts` by hand: it is generated.
+- **The suite runs at UTC+14** (`jest.global-setup.js`), so code that takes a calendar day from a UTC timestamp fails. Work with local calendar days (year, month, day), never `toISOString()` or `getUTC*`.
+- **Component tests** use [React Native Testing Library](https://callstack.github.io/react-native-testing-library/). Query by role and accessible name, the way a screen reader sees the calendar.
+
+Add tests with every change. A bug fix should come with a test that fails without it.
+
+## Commits
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), and a `commit-msg` hook checks them:
+
+```
+type(scope): short summary in the imperative, lowercase, no period
 ```
 
-To run the example app on iOS:
+- **Types:** `feat`, `fix`, `test`, `docs`, `refactor`, `perf`, `chore`, `ci`, `build`, `style`
+- **Scopes (optional):** `core`, `calendar`, `theme`, `example`, `docs`, `ci`, `scripts`
+- Keep the summary under 72 characters. Add a body when the reason for the change isn't obvious.
+- Make one logical change per commit, and make sure every commit passes lint, typecheck and tests.
 
-```sh
-yarn example ios
-```
+The changelog is generated from these messages, so they are worth getting right.
 
-To run the example app on Web:
+A `pre-commit` hook runs ESLint and Prettier on the staged files.
 
-```sh
-yarn example web
-```
+## Pull requests
 
-Make sure your code passes TypeScript:
+1. Branch from `main`, for example `feat/range-selection` or `fix/rtl-arrows`.
+2. Keep the pull request focused on one change, small enough to review in about 15 minutes.
+3. Fill in the [pull request template](.github/pull_request_template.md). Add screenshots or a GIF for any UI change.
+4. CI runs lint, typecheck, tests and the builds. All of it must pass.
 
-```sh
-yarn typecheck
-```
+Pull requests are merged with a merge commit or a rebase, never squashed, so the individual commits stay in the history.
 
-To check for linting errors, run the following:
+## Releases
 
-```sh
-yarn lint
-```
+Releases are made by the maintainer, in two steps, because `main` only changes through pull requests.
 
-To fix formatting errors, run the following:
+1. **Prepare**, on a `release/*` branch from `main`:
 
-```sh
-yarn lint --fix
-```
+   ```sh
+   git switch -c release/v0.2.0 origin/main
+   yarn release
+   ```
 
-Remember to add tests for your change if possible. Run the unit tests by:
+   [release-it](https://github.com/release-it/release-it) runs lint, typecheck and the tests, bumps the version, writes `CHANGELOG.md` from the commit messages, commits `chore: release x.y.z` and pushes the branch. Open a pull request for it and merge it.
 
-```sh
-yarn test
-```
-
-
-
-### Publishing to npm
-
-We use [release-it](https://github.com/release-it/release-it) to make it easier to publish new versions. It handles common tasks like bumping version based on semver, creating tags and releases etc.
-
-To publish new versions, run the following:
-
-```sh
-yarn release
-```
-
-
-### Scripts
-
-The `package.json` file contains various scripts for common tasks:
-
-- `yarn`: setup project by installing dependencies.
-- `yarn typecheck`: type-check files with TypeScript.
-- `yarn lint`: lint files with [ESLint](https://eslint.org/).
-- `yarn test`: run unit tests with [Jest](https://jestjs.io/).
-- `yarn example start`: start the Metro server for the example app.
-- `yarn example android`: run the example app on Android.
-- `yarn example ios`: run the example app on iOS.
-- `yarn example web`: run the example app on Web.
-- `yarn example build:web`: build the example app for Web.
-
-### Sending a pull request
-
-> **Working on your first pull request?** You can learn how from this _free_ series: [How to Contribute to an Open Source Project on GitHub](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github).
-
-When you're sending a pull request:
-
-- Prefer small pull requests focused on one change.
-- Verify that linters and tests are passing.
-- Review the documentation to make sure it looks good.
-- Follow the pull request template when opening a pull request.
-- For pull requests that change the API or implementation, discuss with maintainers first by opening an issue.
+2. **Publish**, from `main` after the merge: tag the merge commit `vX.Y.Z`, push the tag, run `npm publish`, and create the GitHub release from the new `CHANGELOG.md` section.
