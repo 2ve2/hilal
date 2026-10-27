@@ -77,6 +77,10 @@ export function createStyles(theme: HilalTheme) {
     slot: {
       alignItems: 'center',
       flex: 1,
+      // Keeps a gap between neighbouring days when the grid is narrower
+      // than 7 full-size cells, so today's ring never touches the
+      // selected day.
+      paddingHorizontal: 3,
       paddingVertical: 2,
     },
     day: {
