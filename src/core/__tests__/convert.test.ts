@@ -7,7 +7,7 @@ import {
   toGregorian,
   toHijri,
 } from '../convert';
-import { civilFromDays, daysFromCivil } from '../days';
+import { civilFromDays, daysFromCivil, weekdayOfEpochDay } from '../days';
 
 // Public reference dates, independent of the generated table. Each one was
 // checked against Node's ICU before being written down here.
@@ -35,6 +35,16 @@ describe('days', () => {
     for (let epochDay = -30000; epochDay <= 50000; epochDay += 17) {
       const { year, month, day } = civilFromDays(epochDay);
       expect(daysFromCivil(year, month, day)).toBe(epochDay);
+    }
+  });
+
+  it('knows the day of the week', () => {
+    expect(weekdayOfEpochDay(0)).toBe(4); // Thursday 1970-01-01
+    for (let epochDay = -12000; epochDay <= 40000; epochDay += 101) {
+      const { year, month, day } = civilFromDays(epochDay);
+      expect(weekdayOfEpochDay(epochDay)).toBe(
+        new Date(year, month - 1, day).getDay()
+      );
     }
   });
 

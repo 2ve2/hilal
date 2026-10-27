@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { formatHijri } from '../format';
+import { formatGregorian, formatHijri } from '../format';
 
 const RAMADAN_1 = { year: 1446, month: 9, day: 1 };
 
@@ -34,6 +34,21 @@ describe('formatHijri', () => {
     );
     expect(() => formatHijri({ year: 1600, month: 1, day: 1 })).toThrow(
       RangeError
+    );
+  });
+});
+
+describe('formatGregorian', () => {
+  const date = { year: 2024, month: 3, day: 11 };
+
+  it('uses Gulf month names and Arabic-Indic digits for Arabic', () => {
+    expect(formatGregorian(date)).toBe('١١ مارس ٢٠٢٤');
+  });
+
+  it('formats English with Latin digits', () => {
+    expect(formatGregorian(date, { locale: 'en' })).toBe('11 March 2024');
+    expect(formatGregorian(date, { locale: 'ar', digits: 'latin' })).toBe(
+      '11 مارس 2024'
     );
   });
 });
