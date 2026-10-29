@@ -584,6 +584,15 @@ describe('HilalCalendar', () => {
       expect(ramadan.parent!.parent).toHaveStyle({ flexGrow: 1 });
     });
 
+    it('shows the title button without a caret', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      const title = screen.getByRole('button', {
+        name: 'اختر الشهر والسنة، رمضان ١٤٤٥',
+      });
+      expect(title).toHaveTextContent('رمضان ١٤٤٥', { exact: true });
+      expect(screen.queryByText('▾')).toBeNull();
+    });
+
     it('keeps the header height when the years open', async () => {
       await render(<HilalCalendar defaultValue={MARCH_25} />);
       await openMonths();

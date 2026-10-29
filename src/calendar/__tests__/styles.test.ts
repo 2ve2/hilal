@@ -24,8 +24,6 @@ describe('createStyles fonts', () => {
     ] as const) {
       expect(styles[key]).toEqual({ ...base[key], fontFamily: 'Cairo' });
     }
-    // The caret keeps the system font, which always has ▾.
-    expect(styles.caret).toEqual(base.caret);
     expect(styles.day).toEqual(base.day);
   });
 

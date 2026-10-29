@@ -593,14 +593,6 @@ export function HilalCalendar({
             >
               <View style={styles.titleTint} />
               {titleText}
-              {/* Decorative: the button's label already says what it does. */}
-              <Text
-                accessibilityElementsHidden
-                importantForAccessibility="no"
-                style={styles.caret}
-              >
-                ▾
-              </Text>
             </Pressable>
           ) : mode === 'years' ? (
             // As tall as the title button of the other views, so the
