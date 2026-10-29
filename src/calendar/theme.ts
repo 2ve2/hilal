@@ -1,4 +1,4 @@
-/** Colors and shape of the calendar. */
+/** Colors, fonts and shape of the calendar. */
 export type HilalTheme = {
   /** Calendar background. */
   background: string;
@@ -18,6 +18,26 @@ export type HilalTheme = {
   border: string;
   /** Corner radius of a day cell. */
   radius: number;
+  /** Month arrows. Default: `text`. */
+  arrow?: string;
+  /**
+   * Font of all text, for example 'Cairo-Regular'. Default: the system
+   * font.
+   */
+  fontFamily?: string;
+  /**
+   * Font of the bold text (month title, day numbers, toggle, weekdays,
+   * picker), for example 'Cairo-Bold'. When set, it is used as is,
+   * without a fontWeight on top. Default: `fontFamily` with a bold weight.
+   */
+  fontFamilyBold?: string;
+  /**
+   * Multiplies every font size, for example 1.15 for larger text. Day
+   * cells grow with it. Weekday names and the picker's month and year
+   * names shrink with it but never grow, so they still fit their columns
+   * on small phones. Default 1.
+   */
+  fontScale?: number;
 };
 
 export type ThemeProp = 'light' | 'dark' | 'auto' | Partial<HilalTheme>;

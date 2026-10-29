@@ -427,7 +427,7 @@ export function HilalCalendar({
       >
         <Chevron
           direction={pointsLeft ? 'left' : 'right'}
-          color={enabled ? theme.text : theme.disabled}
+          color={enabled ? (theme.arrow ?? theme.text) : theme.disabled}
         />
       </Pressable>
     );

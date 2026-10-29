@@ -13,8 +13,91 @@ const fill = {
 
 export type CalendarStyles = ReturnType<typeof createStyles>;
 
+/** The text styles, which take the theme's fonts and font scale. */
+const TEXT_STYLES = [
+  'toggleText',
+  'title',
+  'subtitle',
+  'weekday',
+  'dayText',
+  'secondaryText',
+  'caret',
+  'pickerText',
+] as const;
+
+/** Text in columns of a fixed width: shrinks with the font scale only. */
+const FIXED_WIDTH_TEXT = new Set<string>(['weekday', 'pickerText']);
+
+type TextStyleObject = {
+  fontSize?: number;
+  lineHeight?: number;
+  fontWeight?: string;
+  fontFamily?: string;
+};
+
 export function createStyles(theme: HilalTheme) {
-  return StyleSheet.create({
+  return StyleSheet.create(applyFonts(baseStyles(theme), theme));
+}
+
+/**
+ * Applies `fontFamily`, `fontFamilyBold` and `fontScale`. Only adds keys
+ * when the theme sets them, so a theme without fonts gives exactly the
+ * base styles.
+ */
+function applyFonts<T extends Record<string, object>>(
+  styles: T,
+  theme: HilalTheme
+): T {
+  const scale = theme.fontScale ?? 1;
+  if (!(Number.isFinite(scale) && scale > 0)) {
+    throw new RangeError(
+      `HilalCalendar: theme.fontScale must be a positive number, got ${scale}`
+    );
+  }
+  const { fontFamily, fontFamilyBold } = theme;
+  if (scale === 1 && !fontFamily && !fontFamilyBold) {
+    return styles;
+  }
+  const out: Record<string, object> = { ...styles };
+  for (const key of TEXT_STYLES) {
+    const style = { ...(styles[key] as TextStyleObject) };
+    // Weekday names (أربعاء خميس) only just fit seven columns on small
+    // phones, and long month names (Dhu al-Qi'dah) three, so these never
+    // grow.
+    const factor = FIXED_WIDTH_TEXT.has(key) ? Math.min(scale, 1) : scale;
+    if (factor !== 1) {
+      if (style.fontSize) style.fontSize = round(style.fontSize * factor);
+      if (style.lineHeight) style.lineHeight = round(style.lineHeight * factor);
+    }
+    const bold = style.fontWeight === '600' || style.fontWeight === '700';
+    // The caret keeps the system font: a custom font may lack ▾.
+    if (key !== 'caret') {
+      if (bold && fontFamilyBold) {
+        // A bold font file plus a bold weight would be bolded twice.
+        style.fontFamily = fontFamilyBold;
+        style.fontWeight = 'normal';
+      } else if (fontFamily) {
+        style.fontFamily = fontFamily;
+      }
+    }
+    out[key] = style;
+  }
+  if (scale > 1) {
+    // Larger text needs larger day cells.
+    const day = styles.day as { height: number; maxWidth: number };
+    out.day = {
+      ...day,
+      height: round(day.height * scale),
+      maxWidth: round(day.maxWidth * scale),
+    };
+  }
+  return out as T;
+}
+
+const round = (n: number) => Math.round(n * 10) / 10;
+
+function baseStyles(theme: HilalTheme) {
+  return {
     container: {
       backgroundColor: theme.background,
       borderRadius: 20,
@@ -191,5 +274,5 @@ export function createStyles(theme: HilalTheme) {
       lineHeight: 18,
       textAlign: 'center',
     },
-  });
+  } as const;
 }

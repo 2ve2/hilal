@@ -532,4 +532,54 @@ describe('HilalCalendar', () => {
       borderRadius: 4,
     });
   });
+
+  it('draws the arrows in theme.arrow, and disabled arrows in theme.disabled', async () => {
+    const strokes = (direction: 'left' | 'right') =>
+      screen.getByTestId(`hilal-chevron-${direction}`).children;
+    // 1 Ramadan is the earliest day, so the previous-month arrow is disabled.
+    await render(
+      <HilalCalendar
+        defaultValue={MARCH_25}
+        minDate={new Date(2024, 2, 11)}
+        theme={{ arrow: '#DC2626' }}
+      />
+    );
+    // Arabic: the next month is on the left.
+    for (const stroke of strokes('left')) {
+      expect(stroke).toHaveStyle({ backgroundColor: '#DC2626' });
+    }
+    for (const stroke of strokes('right')) {
+      expect(stroke).toHaveStyle({ backgroundColor: lightTheme.disabled });
+    }
+  });
+
+  it('draws the arrows in the text color by default', async () => {
+    await render(<HilalCalendar defaultValue={MARCH_25} />);
+    for (const stroke of screen.getByTestId('hilal-chevron-left').children) {
+      expect(stroke).toHaveStyle({ backgroundColor: lightTheme.text });
+    }
+  });
+
+  it('renders text in the theme fonts', async () => {
+    await render(
+      <HilalCalendar
+        defaultValue={MARCH_25}
+        theme={{
+          fontFamily: 'Cairo-Regular',
+          fontFamilyBold: 'Cairo-Bold',
+          fontScale: 1.25,
+        }}
+      />
+    );
+    expect(screen.getByText('رمضان ١٤٤٥')).toHaveStyle({
+      fontFamily: 'Cairo-Bold',
+      fontSize: 22.5,
+      fontWeight: 'normal',
+    });
+    expect(screen.getByText('مارس – أبريل ٢٠٢٤')).toHaveStyle({
+      fontFamily: 'Cairo-Regular',
+      fontSize: 16.3,
+    });
+    expect(day(/^الاثنين، ١٥ رمضان/)).toHaveStyle({ height: 60 });
+  });
 });
