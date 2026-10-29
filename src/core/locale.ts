@@ -1,7 +1,7 @@
 export type Locale = 'ar' | 'en';
 export type Digits = 'arabic' | 'latin';
 export type CalendarType = 'hijri' | 'gregorian';
-export type WeekdayFormat = 'short' | 'long';
+export type WeekdayFormat = 'short' | 'long' | 'narrow';
 
 const HIJRI_MONTHS: Record<Locale, readonly string[]> = {
   ar: [
@@ -80,6 +80,8 @@ const WEEKDAYS: Record<Locale, Record<WeekdayFormat, readonly string[]>> = {
       'السبت',
     ],
     short: ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'],
+    // The same letters as ICU's narrow format.
+    narrow: ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'],
   },
   en: {
     long: [
@@ -92,6 +94,7 @@ const WEEKDAYS: Record<Locale, Record<WeekdayFormat, readonly string[]>> = {
       'Saturday',
     ],
     short: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    narrow: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
   },
 };
 
