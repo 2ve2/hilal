@@ -12,7 +12,7 @@ import {
   screen,
   within,
 } from '@testing-library/react-native';
-import { I18nManager, StyleSheet } from 'react-native';
+import { AccessibilityInfo, I18nManager, StyleSheet } from 'react-native';
 
 import { HilalCalendar } from '../HilalCalendar';
 import { lightTheme } from '../theme';
@@ -516,6 +516,89 @@ describe('HilalCalendar', () => {
       );
       expect(header()).toHaveTextContent('محرم ١٤٤٦');
       expect(day(/^الأحد، ١ محرم ١٤٤٦/)).toBeSelected();
+    });
+  });
+
+  describe('switching views', () => {
+    const openMonths = () =>
+      fireEvent.press(
+        screen.getByRole('button', { name: /^اختر الشهر والسنة/ })
+      );
+    // The view wrappers: around the weekday row and weeks, or the picker.
+    const daysView = () => screen.getByText('أحد').parent!.parent!;
+    const flat = (element: { props: { style?: unknown } }) =>
+      StyleSheet.flatten(element.props.style as object) ?? {};
+    const pickerView = () =>
+      screen.getByRole('button', { name: 'رمضان ١٤٤٥' }).parent!.parent!.parent!
+        .parent!;
+
+    it("doesn't animate the days when the calendar appears", async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      expect(flat(daysView())).not.toHaveProperty('opacity');
+    });
+
+    it('fades the picker in, then the days when going back', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await openMonths();
+      expect(pickerView()).toHaveStyle({ opacity: 0 });
+
+      await fireEvent.press(screen.getByRole('button', { name: 'شوال ١٤٤٥' }));
+      expect(header()).toHaveTextContent('شوال ١٤٤٥');
+      expect(daysView()).toHaveStyle({ opacity: 0 });
+    });
+
+    it('plays the fade again from months to years', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await openMonths();
+      const months = pickerView();
+
+      await fireEvent.press(
+        screen.getByRole('button', { name: /^اختر السنة/ })
+      );
+      const years = screen.getByRole('button', { name: '١٤٤٥' }).parent!.parent!
+        .parent!.parent!;
+      // A new wrapper, so its fade starts over.
+      expect(years).not.toBe(months);
+      expect(years).toHaveStyle({ opacity: 0 });
+    });
+
+    it("doesn't animate when the system reduces motion", async () => {
+      jest
+        .spyOn(AccessibilityInfo, 'isReduceMotionEnabled')
+        .mockResolvedValueOnce(true);
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await openMonths();
+      expect(flat(pickerView())).not.toHaveProperty('opacity');
+    });
+
+    it('keeps the height of the days when the picker opens', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await fireEvent(daysView(), 'layout', {
+        nativeEvent: { layout: { x: 0, y: 0, width: 360, height: 312 } },
+      });
+      await openMonths();
+      expect(pickerView()).toHaveStyle({ minHeight: 312 });
+      // The rows and buttons grow to fill it.
+      const ramadan = screen.getByRole('button', { name: 'رمضان ١٤٤٥' });
+      expect(ramadan).toHaveStyle({ flexGrow: 1 });
+      expect(ramadan.parent!.parent).toHaveStyle({ flexGrow: 1 });
+    });
+
+    it('keeps the header height when the years open', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await openMonths();
+      await fireEvent.press(
+        screen.getByRole('button', { name: /^اختر السنة/ })
+      );
+      // The same vertical padding as the title button of the other views.
+      expect(header().parent).toHaveStyle({ paddingVertical: 2 });
+    });
+
+    it('lays the picker out by its content before the days are measured', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await openMonths();
+      const ramadan = screen.getByRole('button', { name: 'رمضان ١٤٤٥' });
+      expect(flat(ramadan)).not.toHaveProperty('flexGrow');
     });
   });
 

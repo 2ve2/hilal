@@ -288,6 +288,10 @@ function baseStyles(theme: HilalTheme) {
       flexShrink: 1,
       textAlign: 'center',
     },
+    // The title of the year picker, which is not a button.
+    titleStatic: {
+      paddingVertical: 2,
+    },
     titleButtonPressed: {
       backgroundColor: theme.border,
     },
@@ -320,6 +324,10 @@ function baseStyles(theme: HilalTheme) {
       overflow: 'hidden',
       paddingHorizontal: 4,
       paddingVertical: 6,
+    },
+    // Grows into the free height of its parent.
+    grow: {
+      flexGrow: 1,
     },
     pickerItemTint: {
       ...fill,

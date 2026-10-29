@@ -17,6 +17,8 @@ type PickerGridProps = {
   styles: CalendarStyles;
   /** 'row' or 'row-reverse', the same as the day grid. */
   row: 'row' | 'row-reverse';
+  /** Grow the rows to fill the parent's height. */
+  fill: boolean;
   onSelect: (key: number) => void;
 };
 
@@ -34,15 +36,21 @@ function noBreakAtHyphens(label: string) {
  * The month or year picker: items in rows of three, each a button. Only
  * rendered while the picker is open.
  */
-export function PickerGrid({ items, styles, row, onSelect }: PickerGridProps) {
+export function PickerGrid({
+  items,
+  styles,
+  row,
+  fill,
+  onSelect,
+}: PickerGridProps) {
   const rows: PickerGridItem[][] = [];
   for (let i = 0; i < items.length; i += COLUMNS) {
     rows.push(items.slice(i, i + COLUMNS));
   }
   return (
-    <View style={styles.picker}>
+    <View style={[styles.picker, fill && styles.grow]}>
       {rows.map((rowItems, r) => (
-        <View key={r} style={{ flexDirection: row }}>
+        <View key={r} style={[{ flexDirection: row }, fill && styles.grow]}>
           {rowItems.map((item) => (
             <View key={item.key} style={styles.pickerSlot}>
               <Pressable
@@ -56,6 +64,7 @@ export function PickerGrid({ items, styles, row, onSelect }: PickerGridProps) {
                 onPress={() => onSelect(item.key)}
                 style={({ pressed }) => [
                   styles.pickerItem,
+                  fill && styles.grow,
                   item.current && styles.today,
                   item.selected && styles.selected,
                   pressed && !item.selected && styles.pressed,
