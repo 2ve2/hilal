@@ -101,25 +101,26 @@ The [example app](example) shows every feature side by side. Run it with `yarn e
 
 ## `<HilalCalendar />` props
 
-| Prop                 | Type                                                 | Default                             | Description                                                                              |
-| -------------------- | ---------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------- |
-| `value`              | `Date`                                               |                                     | Selected day (controlled). Only the local calendar day is used.                          |
-| `defaultValue`       | `Date`                                               |                                     | Initially selected day (uncontrolled).                                                   |
-| `onChange`           | `(date: SelectedDate) => void`                       |                                     | Called when the user picks a day.                                                        |
-| `calendar`           | `'hijri' \| 'gregorian'`                             | `'hijri'`                           | Calendar of the month grid. The grid follows this prop when it changes.                  |
-| `onCalendarChange`   | `(calendar) => void`                                 |                                     | Called when the user switches calendars with the toggle.                                 |
-| `showCalendarToggle` | `boolean`                                            | `true`                              | Show the Hijri / Gregorian toggle.                                                       |
-| `showSecondaryDate`  | `boolean`                                            | `true`                              | Show the other calendar's day under each day.                                            |
-| `locale`             | `'ar' \| 'en'`                                       | `'ar'`                              | Language of month names, weekdays and labels.                                            |
-| `digits`             | `'arabic' \| 'latin'`                                | `'arabic'` for `ar`, else `'latin'` | Arabic-Indic (١٢٣) or Latin (123) digits.                                                |
-| `direction`          | `'rtl' \| 'ltr' \| 'auto'`                           | `'auto'`                            | `auto` is right-to-left when the app is RTL (`I18nManager.isRTL`) or the locale is `ar`. |
-| `firstDayOfWeek`     | `0 \| 1 \| 6`                                        | `0`                                 | `0` Sunday, `1` Monday, `6` Saturday.                                                    |
-| `minDate`            | `Date`                                               |                                     | Earliest selectable day. Navigation stops at its month.                                  |
-| `maxDate`            | `Date`                                               |                                     | Latest selectable day. Navigation stops at its month.                                    |
-| `isDateDisabled`     | `(date: SelectedDate) => boolean`                    |                                     | Return `true` to disable a day.                                                          |
-| `theme`              | `'light' \| 'dark' \| 'auto' \| Partial<HilalTheme>` | `'auto'`                            | `auto` follows `useColorScheme()`. A partial theme is merged over the `auto` theme.      |
-| `style`              | `StyleProp<ViewStyle>`                               |                                     | Style of the outer container.                                                            |
-| `dayStyle`           | `StyleProp<ViewStyle>`                               |                                     | Style of every day cell.                                                                 |
+| Prop                 | Type                                                 | Default                             | Description                                                                                                                                                             |
+| -------------------- | ---------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`              | `Date`                                               |                                     | Selected day (controlled). Only the local calendar day is used.                                                                                                         |
+| `defaultValue`       | `Date`                                               |                                     | Initially selected day (uncontrolled).                                                                                                                                  |
+| `onChange`           | `(date: SelectedDate) => void`                       |                                     | Called when the user picks a day.                                                                                                                                       |
+| `calendar`           | `'hijri' \| 'gregorian'`                             | `'hijri'`                           | Calendar of the month grid. The grid follows this prop when it changes.                                                                                                 |
+| `onCalendarChange`   | `(calendar) => void`                                 |                                     | Called when the user switches calendars with the toggle.                                                                                                                |
+| `showCalendarToggle` | `boolean`                                            | `true`                              | Show the Hijri / Gregorian toggle.                                                                                                                                      |
+| `showSecondaryDate`  | `boolean`                                            | `true`                              | Show the other calendar's day under each day.                                                                                                                           |
+| `locale`             | `'ar' \| 'en'`                                       | `'ar'`                              | Language of month names, weekdays and labels.                                                                                                                           |
+| `digits`             | `'arabic' \| 'latin'`                                | `'arabic'` for `ar`, else `'latin'` | Arabic-Indic (١٢٣) or Latin (123) digits.                                                                                                                               |
+| `direction`          | `'rtl' \| 'ltr' \| 'auto'`                           | `'auto'`                            | `auto` is right-to-left when the app is RTL (`I18nManager.isRTL`) or the locale is `ar`.                                                                                |
+| `firstDayOfWeek`     | `0 \| 1 \| 6`                                        | `0`                                 | `0` Sunday, `1` Monday, `6` Saturday.                                                                                                                                   |
+| `minDate`            | `Date`                                               |                                     | Earliest selectable day. Navigation stops at its month.                                                                                                                 |
+| `maxDate`            | `Date`                                               |                                     | Latest selectable day. Navigation stops at its month.                                                                                                                   |
+| `isDateDisabled`     | `(date: SelectedDate) => boolean`                    |                                     | Return `true` to disable a day.                                                                                                                                         |
+| `hijriAdjustment`    | `number`                                             | `0`                                 | Shift Hijri dates by whole days, from `-2` to `2`. `1` makes every Hijri date one day later. See [Adjusting to local moon sighting](#adjusting-to-local-moon-sighting). |
+| `theme`              | `'light' \| 'dark' \| 'auto' \| Partial<HilalTheme>` | `'auto'`                            | `auto` follows `useColorScheme()`. A partial theme is merged over the `auto` theme.                                                                                     |
+| `style`              | `StyleProp<ViewStyle>`                               |                                     | Style of the outer container.                                                                                                                                           |
+| `dayStyle`           | `StyleProp<ViewStyle>`                               |                                     | Style of every day cell.                                                                                                                                                |
 
 Navigation never goes past `minDate`/`maxDate` or the edges of the supported range (1356–1500 AH), so the calendar can't show a broken month.
 
@@ -163,8 +164,8 @@ Without options, `formatHijri` returns ١ رمضان ١٤٤٦ هـ (Arabic, Arab
 
 | Function                                                  | Description                                                                                             |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `toHijri(date: Date): HijriDate`                          | Hijri date of the local calendar day of `date`. The time of day is ignored.                             |
-| `toGregorian(hijri: HijriDate): Date`                     | A `Date` at local midnight of the matching Gregorian day.                                               |
+| `toHijri(date: Date, { adjustment? }): HijriDate`         | Hijri date of the local calendar day of `date`. The time of day is ignored.                             |
+| `toGregorian(hijri: HijriDate, { adjustment? }): Date`    | A `Date` at local midnight of the matching Gregorian day.                                               |
 | `getHijriMonthLength(year, month): 29 \| 30`              | Days in a Hijri month (`month` is 1–12).                                                                |
 | `isValidHijri(hijri: HijriDate): boolean`                 | Whether the date exists and is in the supported range.                                                  |
 | `getSupportedRange(): { min: HijriDate; max: HijriDate }` | `1 Muharram 1356` to `30 Dhu al-Hijjah 1500`.                                                           |
@@ -196,12 +197,29 @@ Hilal uses the **Umm al-Qura** calendar, the official calendar of Saudi Arabia. 
 
 Religious occasions such as the start of Ramadan or Eid are announced from the actual sighting of the crescent moon (_hilal_), and can differ from the Umm al-Qura date by a day. Use Hilal for scheduling and display, and rely on the official announcement for religious observances.
 
+### Adjusting to local moon sighting
+
+Where months start a day before or after Umm al-Qura, shift the Hijri calendar by whole days, from `-2` to `2`:
+
+```tsx
+// The month started a day earlier here: Umm al-Qura's 29 Sha'ban 1445
+// (10 March 2024) shows as 1 Ramadan 1445.
+<HilalCalendar hijriAdjustment={1} />
+```
+
+```ts
+toHijri(new Date(2024, 2, 10), { adjustment: 1 }); // { year: 1445, month: 9, day: 1 }
+toGregorian({ year: 1445, month: 9, day: 1 }, { adjustment: 1 }); // Sun Mar 10 2024
+```
+
+Gregorian dates never change. The shift moves the whole calendar, so months keep their Umm al-Qura lengths: a month of 29 days stays 29 days. This is the common approach in Islamic apps, and it matches a local calendar that runs a fixed number of days ahead of or behind Umm al-Qura.
+
 ### How the Umm al-Qura table is made and verified
 
 - **Generated, not copied.** [`scripts/generate-umalqura-table.ts`](scripts/generate-umalqura-table.ts) reads the `islamic-umalqura` calendar from Node's built-in ICU and writes [`src/core/umalqura-data.ts`](src/core/umalqura-data.ts). Run `yarn generate:umalqura` to rebuild it.
 - **Compact.** The table is one 12-bit number per Hijri year (bit set means a 30-day month), plus the start day of 1 Muharram 1356: 145 numbers, about 1.5 KB.
 - **No `Intl` at runtime.** Support for the `islamic-umalqura` calendar differs between Hermes versions and platforms, so the library only reads the table.
-- **Tested day by day.** The test suite compares `toHijri` with ICU for all 51,383 days in the range, at 00:00 and 23:59, and checks every month length and the round trip `toGregorian(toHijri(d)) === d`. The suite runs in a UTC+14 time zone, so any code that takes the day from a UTC timestamp fails.
+- **Tested day by day.** The test suite compares `toHijri` with ICU for all 51,383 days in the range, at 00:00 and 23:59, and checks every month length and the round trip `toGregorian(toHijri(d)) === d`, also for every Hijri adjustment. The suite runs in a UTC+14 time zone, so any code that takes the day from a UTC timestamp fails.
 
 ## Roadmap
 
