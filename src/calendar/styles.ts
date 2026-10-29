@@ -22,7 +22,6 @@ const TEXT_STYLES = [
   'weekday',
   'dayText',
   'secondaryText',
-  'caret',
   'pickerText',
 ] as const;
 
@@ -71,15 +70,12 @@ function applyFonts<T extends Record<string, object>>(
       if (style.lineHeight) style.lineHeight = round(style.lineHeight * factor);
     }
     const bold = style.fontWeight === '600' || style.fontWeight === '700';
-    // The caret keeps the system font: a custom font may lack ▾.
-    if (key !== 'caret') {
-      if (bold && fontFamilyBold) {
-        // A bold font file plus a bold weight would be bolded twice.
-        style.fontFamily = fontFamilyBold;
-        style.fontWeight = 'normal';
-      } else if (fontFamily) {
-        style.fontFamily = fontFamily;
-      }
+    if (bold && fontFamilyBold) {
+      // A bold font file plus a bold weight would be bolded twice.
+      style.fontFamily = fontFamilyBold;
+      style.fontWeight = 'normal';
+    } else if (fontFamily) {
+      style.fontFamily = fontFamily;
     }
     out[key] = style;
   }
@@ -283,10 +279,14 @@ function baseStyles(theme: HilalTheme) {
       paddingVertical: 2,
     },
     // The title inside the button: centered and shrinkable when a long
-    // name wraps on a narrow phone, so the ▾ stays next to it.
+    // name wraps on a narrow phone.
     titleInButton: {
       flexShrink: 1,
       textAlign: 'center',
+    },
+    // The title of the year picker, which is not a button.
+    titleStatic: {
+      paddingVertical: 2,
     },
     titleButtonPressed: {
       backgroundColor: theme.border,
@@ -296,12 +296,6 @@ function baseStyles(theme: HilalTheme) {
       ...fill,
       backgroundColor: theme.primary,
       opacity: 0.1,
-    },
-    caret: {
-      color: theme.primary,
-      fontSize: 13,
-      // Both sides: the title row may be reversed for right-to-left.
-      marginHorizontal: 4,
     },
     picker: {
       marginTop: 4,
@@ -320,6 +314,10 @@ function baseStyles(theme: HilalTheme) {
       overflow: 'hidden',
       paddingHorizontal: 4,
       paddingVertical: 6,
+    },
+    // Grows into the free height of its parent.
+    grow: {
+      flexGrow: 1,
     },
     pickerItemTint: {
       ...fill,

@@ -24,6 +24,7 @@ import {
   type Digits,
   type Locale,
 } from '../core/locale';
+import { Appear, useReduceMotion } from './Appear';
 import { Chevron } from './Chevron';
 import { DayCell } from './DayCell';
 import {
@@ -240,6 +241,16 @@ export function HilalCalendar({
   const [pickerYear, setPickerYear] = useState(0);
   const [pageStart, setPageStart] = useState(0);
   const mode: View_ = showMonthYearPicker ? view : 'days';
+  // The grids fade in when switching views, but not when the calendar
+  // first appears: the days only animate once the picker has been open.
+  const reduceMotion = useReduceMotion();
+  const [pickerOpened, setPickerOpened] = useState(false);
+  if (mode !== 'days' && !pickerOpened) {
+    setPickerOpened(true);
+  }
+  // The height of the days, which the picker takes too so that the
+  // calendar doesn't jump in size when switching.
+  const [daysHeight, setDaysHeight] = useState<number>();
 
   const switchTo = (next: CalendarType, current: CalendarMonth) => {
     setCalendar(next);
@@ -582,15 +593,11 @@ export function HilalCalendar({
             >
               <View style={styles.titleTint} />
               {titleText}
-              {/* Decorative: the button's label already says what it does. */}
-              <Text
-                accessibilityElementsHidden
-                importantForAccessibility="no"
-                style={styles.caret}
-              >
-                ▾
-              </Text>
             </Pressable>
+          ) : mode === 'years' ? (
+            // As tall as the title button of the other views, so the
+            // header doesn't jump when the years open.
+            <View style={styles.titleStatic}>{titleText}</View>
           ) : (
             titleText
           )}
@@ -600,14 +607,25 @@ export function HilalCalendar({
       </View>
 
       {pickerItems ? (
-        <PickerGrid
-          items={pickerItems}
-          styles={styles}
-          row={row}
-          onSelect={pick}
-        />
+        <Appear
+          key={mode}
+          animate={!reduceMotion}
+          style={daysHeight !== undefined && { minHeight: daysHeight }}
+        >
+          <PickerGrid
+            items={pickerItems}
+            styles={styles}
+            row={row}
+            fill={daysHeight !== undefined}
+            onSelect={pick}
+          />
+        </Appear>
       ) : (
-        <>
+        <Appear
+          key="days"
+          animate={pickerOpened && !reduceMotion}
+          onLayout={(event) => setDaysHeight(event.nativeEvent.layout.height)}
+        >
           <View style={[styles.weekdays, { flexDirection: row }]}>
             {/* Keyed by position: narrow names repeat (S, T). */}
             {weekdays.map((name, i) => (
@@ -636,7 +654,7 @@ export function HilalCalendar({
               )}
             </View>
           ))}
-        </>
+        </Appear>
       )}
     </View>
   );
