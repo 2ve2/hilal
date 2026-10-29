@@ -18,6 +18,7 @@ import { formatGregorian, formatHijri } from '../core/format';
 import {
   defaultDigits,
   formatNumber,
+  getMonthNames,
   getWeekdayNames,
   type CalendarType,
   type Digits,
@@ -29,15 +30,24 @@ import {
   addMonths,
   buildMonthGrid,
   clampDay,
+  dateInCalendar,
   monthContaining,
   monthOverlaps,
+  monthsOfYear,
   monthStart,
   monthTitle,
+  pageOverlaps,
   secondaryTitle,
   selectableRange,
+  yearOverlaps,
+  yearPageStart,
+  yearsOnPage,
+  YEARS_PER_PAGE,
+  yearsSecondaryTitle,
   type CalendarMonth,
   type DayRange,
 } from './month';
+import { PickerGrid, type PickerGridItem } from './PickerGrid';
 import { createStyles } from './styles';
 import { resolveTheme } from './theme';
 import type { HilalCalendarProps, SelectedDate } from './types';
@@ -49,6 +59,12 @@ const LABELS: Record<
     gregorian: string;
     previous: string;
     next: string;
+    previousYear: string;
+    nextYear: string;
+    previousYears: string;
+    nextYears: string;
+    chooseMonth: string;
+    chooseYear: string;
     separator: string;
   }
 > = {
@@ -57,6 +73,12 @@ const LABELS: Record<
     gregorian: 'ميلادي',
     previous: 'الشهر السابق',
     next: 'الشهر التالي',
+    previousYear: 'السنة السابقة',
+    nextYear: 'السنة التالية',
+    previousYears: 'السنوات السابقة',
+    nextYears: 'السنوات التالية',
+    chooseMonth: 'اختر الشهر والسنة',
+    chooseYear: 'اختر السنة',
     separator: '، ',
   },
   en: {
@@ -64,9 +86,18 @@ const LABELS: Record<
     gregorian: 'Gregorian',
     previous: 'Previous month',
     next: 'Next month',
+    previousYear: 'Previous year',
+    nextYear: 'Next year',
+    previousYears: 'Previous years',
+    nextYears: 'Next years',
+    chooseMonth: 'Choose month and year',
+    chooseYear: 'Choose year',
     separator: ', ',
   },
 };
+
+/** What the grid shows: the days of a month, or the month or year picker. */
+type View_ = 'days' | 'months' | 'years';
 
 function epochDayOf(date: Date | undefined) {
   return date instanceof Date && !Number.isNaN(date.getTime())
@@ -136,6 +167,7 @@ export function HilalCalendar({
   maxDate,
   isDateDisabled,
   hijriAdjustment = 0,
+  showMonthYearPicker = true,
   theme: themeProp = 'auto',
   style,
   dayStyle,
@@ -193,8 +225,16 @@ export function HilalCalendar({
   );
   const [lastSelectedDay, setLastSelectedDay] = useState(selectedDay);
 
+  // The month and year picker: which grid is shown, the year whose months
+  // are listed, and the first year of the page of years.
+  const [view, setView] = useState<View_>('days');
+  const [pickerYear, setPickerYear] = useState(0);
+  const [pageStart, setPageStart] = useState(0);
+  const mode: View_ = showMonthYearPicker ? view : 'days';
+
   const switchTo = (next: CalendarType, current: CalendarMonth) => {
     setCalendar(next);
+    setView('days');
     // Keep the selected day in view, or else the month being looked at.
     const anchor =
       selectedDay ?? clampDay(monthStart(current, adjustment), range);
@@ -312,10 +352,58 @@ export function HilalCalendar({
     onCalendarChange?.(next);
   };
 
-  const previous = addMonths(shown, -1);
-  const next = addMonths(shown, 1);
-  const canGoBack = monthOverlaps(previous, range, adjustment);
-  const canGoForward = monthOverlaps(next, range, adjustment);
+  // Today's month and year in the shown calendar, for the picker's ring.
+  const todayInCalendar = safeDateInCalendar(today, calendar, adjustment);
+
+  // What the arrows do depends on the grid: months, years, or pages.
+  let arrows: Record<
+    'previous' | 'next',
+    { enabled: boolean; label: string; onPress: () => void }
+  >;
+  if (mode === 'months') {
+    arrows = {
+      previous: {
+        enabled: yearOverlaps(calendar, pickerYear - 1, range, adjustment),
+        label: labels.previousYear,
+        onPress: () => setPickerYear(pickerYear - 1),
+      },
+      next: {
+        enabled: yearOverlaps(calendar, pickerYear + 1, range, adjustment),
+        label: labels.nextYear,
+        onPress: () => setPickerYear(pickerYear + 1),
+      },
+    };
+  } else if (mode === 'years') {
+    const before = pageStart - YEARS_PER_PAGE;
+    const after = pageStart + YEARS_PER_PAGE;
+    arrows = {
+      previous: {
+        enabled: pageOverlaps(calendar, before, range, adjustment),
+        label: labels.previousYears,
+        onPress: () => setPageStart(before),
+      },
+      next: {
+        enabled: pageOverlaps(calendar, after, range, adjustment),
+        label: labels.nextYears,
+        onPress: () => setPageStart(after),
+      },
+    };
+  } else {
+    const previous = addMonths(shown, -1);
+    const next = addMonths(shown, 1);
+    arrows = {
+      previous: {
+        enabled: monthOverlaps(previous, range, adjustment),
+        label: labels.previous,
+        onPress: () => setMonth(previous),
+      },
+      next: {
+        enabled: monthOverlaps(next, range, adjustment),
+        label: labels.next,
+        onPress: () => setMonth(next),
+      },
+    };
+  }
 
   const weekdayNames = getWeekdayNames(locale, 'short');
   const weekdays = Array.from(
@@ -324,17 +412,17 @@ export function HilalCalendar({
   );
 
   const renderArrow = (kind: 'previous' | 'next') => {
-    const enabled = kind === 'previous' ? canGoBack : canGoForward;
+    const { enabled, label, onPress } = arrows[kind];
     // Arrows point the way the months move: outward in reading order.
     const pointsLeft = (kind === 'previous') !== rtl;
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={labels[kind]}
+        accessibilityLabel={label}
         accessibilityState={{ disabled: !enabled }}
         disabled={!enabled}
         hitSlop={8}
-        onPress={() => setMonth(kind === 'previous' ? previous : next)}
+        onPress={onPress}
         style={({ pressed }) => [styles.arrow, pressed && styles.arrowPressed]}
       >
         <Chevron
@@ -343,6 +431,98 @@ export function HilalCalendar({
         />
       </Pressable>
     );
+  };
+
+  const year = (y: number) => formatNumber(y, digits);
+
+  // The header title, and what pressing it opens.
+  let title: string;
+  let subtitle: string;
+  let titleAction: { label: string; onPress: () => void } | undefined;
+  if (mode === 'months') {
+    title = year(pickerYear);
+    subtitle = yearsSecondaryTitle(
+      calendar,
+      pickerYear,
+      pickerYear,
+      digits,
+      adjustment
+    );
+    titleAction = {
+      label: labels.chooseYear,
+      onPress: () => {
+        setPageStart(yearPageStart(pickerYear));
+        setView('years');
+      },
+    };
+  } else if (mode === 'years') {
+    const last = pageStart + YEARS_PER_PAGE - 1;
+    title = `${year(pageStart)} – ${year(last)}`;
+    subtitle = yearsSecondaryTitle(
+      calendar,
+      pageStart,
+      last,
+      digits,
+      adjustment
+    );
+  } else {
+    title = monthTitle(shown, locale, digits);
+    subtitle = secondaryTitle(shown, locale, digits, adjustment);
+    if (showMonthYearPicker) {
+      titleAction = {
+        label: labels.chooseMonth,
+        onPress: () => {
+          setPickerYear(shown.year);
+          setView('months');
+        },
+      };
+    }
+  }
+
+  const titleText = (
+    <Text
+      accessibilityRole="header"
+      style={titleAction ? [styles.title, styles.titleInButton] : styles.title}
+    >
+      {title}
+    </Text>
+  );
+
+  let pickerItems: PickerGridItem[] | undefined;
+  if (mode === 'months') {
+    const names = getMonthNames(calendar, locale);
+    pickerItems = monthsOfYear(calendar, pickerYear, range, adjustment).map(
+      ({ value: m, disabled }) => ({
+        key: m,
+        label: names[m - 1]!,
+        accessibilityLabel: `${names[m - 1]} ${year(pickerYear)}`,
+        selected: pickerYear === shown.year && m === shown.month,
+        current:
+          todayInCalendar?.year === pickerYear && todayInCalendar.month === m,
+        disabled,
+      })
+    );
+  } else if (mode === 'years') {
+    pickerItems = yearsOnPage(calendar, pageStart, range, adjustment).map(
+      ({ value: y, disabled }) => ({
+        key: y,
+        label: year(y),
+        accessibilityLabel: year(y),
+        selected: y === pickerYear,
+        current: todayInCalendar?.year === y,
+        disabled,
+      })
+    );
+  }
+
+  const pick = (key: number) => {
+    if (mode === 'months') {
+      setMonth({ calendar, year: pickerYear, month: key });
+      setView('days');
+    } else {
+      setPickerYear(key);
+      setView('months');
+    }
   };
 
   return (
@@ -379,43 +559,88 @@ export function HilalCalendar({
       >
         {renderArrow('previous')}
         <View style={styles.titles}>
-          <Text accessibilityRole="header" style={styles.title}>
-            {monthTitle(shown, locale, digits)}
-          </Text>
-          <Text style={styles.subtitle}>
-            {secondaryTitle(shown, locale, digits, adjustment)}
-          </Text>
+          {titleAction ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${titleAction.label}${labels.separator}${title}`}
+              hitSlop={6}
+              onPress={titleAction.onPress}
+              style={({ pressed }) => [
+                styles.titleButton,
+                { flexDirection: row },
+                pressed && styles.titleButtonPressed,
+              ]}
+            >
+              <View style={styles.titleTint} />
+              {titleText}
+              {/* Decorative: the button's label already says what it does. */}
+              <Text
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+                style={styles.caret}
+              >
+                ▾
+              </Text>
+            </Pressable>
+          ) : (
+            titleText
+          )}
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
         {renderArrow('next')}
       </View>
 
-      <View style={[styles.weekdays, { flexDirection: row }]}>
-        {weekdays.map((name) => (
-          <Text key={name} style={styles.weekday}>
-            {name}
-          </Text>
-        ))}
-      </View>
+      {pickerItems ? (
+        <PickerGrid
+          items={pickerItems}
+          styles={styles}
+          row={row}
+          onSelect={pick}
+        />
+      ) : (
+        <>
+          <View style={[styles.weekdays, { flexDirection: row }]}>
+            {weekdays.map((name) => (
+              <Text key={name} style={styles.weekday}>
+                {name}
+              </Text>
+            ))}
+          </View>
 
-      {cells.map((week, w) => (
-        <View key={w} style={[styles.week, { flexDirection: row }]}>
-          {week.map((cell, d) =>
-            cell === null ? (
-              <View key={`empty-${d}`} style={styles.slot} />
-            ) : (
-              <DayCell
-                key={cell.epochDay}
-                {...cell}
-                selected={cell.epochDay === selectedDay}
-                today={cell.epochDay === today}
-                styles={styles}
-                dayStyle={stableDayStyle}
-                onSelect={onSelect}
-              />
-            )
-          )}
-        </View>
-      ))}
+          {cells.map((week, w) => (
+            <View key={w} style={[styles.week, { flexDirection: row }]}>
+              {week.map((cell, d) =>
+                cell === null ? (
+                  <View key={`empty-${d}`} style={styles.slot} />
+                ) : (
+                  <DayCell
+                    key={cell.epochDay}
+                    {...cell}
+                    selected={cell.epochDay === selectedDay}
+                    today={cell.epochDay === today}
+                    styles={styles}
+                    dayStyle={stableDayStyle}
+                    onSelect={onSelect}
+                  />
+                )
+              )}
+            </View>
+          ))}
+        </>
+      )}
     </View>
   );
+}
+
+/** A day's date in a calendar, or undefined outside the supported range. */
+function safeDateInCalendar(
+  epochDay: number,
+  calendar: CalendarType,
+  adjustment: number
+) {
+  try {
+    return dateInCalendar(epochDay, calendar, adjustment);
+  } catch {
+    return undefined;
+  }
 }

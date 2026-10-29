@@ -55,6 +55,12 @@ export type HilalCalendarProps = {
    * date one day later. Gregorian dates never change. Default 0.
    */
   hijriAdjustment?: number;
+  /**
+   * Pressing the month title opens a grid of months, and from there a
+   * grid of years, to jump far without paging month by month. Default
+   * true.
+   */
+  showMonthYearPicker?: boolean;
 
   /**
    * 'light', 'dark', 'auto' (default, follows the system color scheme),

@@ -3,6 +3,12 @@ import { describe, expect, it } from '@jest/globals';
 import { daysFromCivil } from '../../core/days';
 import {
   addMonths,
+  monthsOfYear,
+  pageOverlaps,
+  yearOverlaps,
+  yearPageStart,
+  yearsOnPage,
+  yearsSecondaryTitle,
   buildMonthGrid,
   monthContaining,
   monthLength,
@@ -171,5 +177,114 @@ describe('navigation', () => {
   it('clamps out-of-range days to the nearest supported month', () => {
     expect(monthContaining(-1e6, 'hijri')).toEqual(hijri(1356, 1));
     expect(monthContaining(1e6, 'gregorian')).toEqual(gregorian(2077, 11));
+  });
+});
+
+describe('month and year picker', () => {
+  const enabled = (items: Array<{ value: number; disabled: boolean }>) =>
+    items.filter((item) => !item.disabled).map((item) => item.value);
+
+  it('enables every month of a year inside the range', () => {
+    expect(enabled(monthsOfYear('hijri', 1445, SUPPORTED_DAYS))).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+    ]);
+  });
+
+  it('disables months outside minDate and maxDate', () => {
+    // 20 March - 2 May 2024: Ramadan and Shawwal 1445, March - May 2024.
+    const range = selectableRange(
+      daysFromCivil(2024, 3, 20),
+      daysFromCivil(2024, 5, 2)
+    );
+    expect(enabled(monthsOfYear('hijri', 1445, range))).toEqual([9, 10]);
+    expect(enabled(monthsOfYear('gregorian', 2024, range))).toEqual([3, 4, 5]);
+    expect(enabled(monthsOfYear('gregorian', 2025, range))).toEqual([]);
+  });
+
+  it('disables Gregorian months outside the supported range', () => {
+    // The range starts 14 March 1937 and ends 16 November 2077.
+    expect(enabled(monthsOfYear('gregorian', 1937, SUPPORTED_DAYS))).toEqual([
+      3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+    ]);
+    expect(enabled(monthsOfYear('gregorian', 2077, SUPPORTED_DAYS))).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+    ]);
+  });
+
+  it('knows which years can be shown', () => {
+    expect(yearOverlaps('hijri', 1356, SUPPORTED_DAYS)).toBe(true);
+    expect(yearOverlaps('hijri', 1355, SUPPORTED_DAYS)).toBe(false);
+    expect(yearOverlaps('hijri', 1500, SUPPORTED_DAYS)).toBe(true);
+    expect(yearOverlaps('hijri', 1501, SUPPORTED_DAYS)).toBe(false);
+    expect(yearOverlaps('gregorian', 1937, SUPPORTED_DAYS)).toBe(true);
+    expect(yearOverlaps('gregorian', 1936, SUPPORTED_DAYS)).toBe(false);
+    expect(yearOverlaps('gregorian', 2078, SUPPORTED_DAYS)).toBe(false);
+  });
+
+  it('pages years twelve at a time', () => {
+    expect(yearPageStart(1445)).toBe(1440);
+    expect(yearPageStart(1440)).toBe(1440);
+    expect(yearPageStart(2024)).toBe(2016);
+    expect(
+      yearsOnPage('hijri', 1440, SUPPORTED_DAYS).map((y) => y.value)
+    ).toEqual([
+      1440, 1441, 1442, 1443, 1444, 1445, 1446, 1447, 1448, 1449, 1450, 1451,
+    ]);
+  });
+
+  it('stops paging at the edges of the supported range', () => {
+    // First Hijri page: 1356-1367, all supported; the page before has none.
+    expect(enabled(yearsOnPage('hijri', 1356, SUPPORTED_DAYS))).toHaveLength(
+      12
+    );
+    expect(pageOverlaps('hijri', 1344, SUPPORTED_DAYS)).toBe(false);
+    // Last Hijri page: only 1500.
+    expect(enabled(yearsOnPage('hijri', 1500, SUPPORTED_DAYS))).toEqual([1500]);
+    expect(pageOverlaps('hijri', 1512, SUPPORTED_DAYS)).toBe(false);
+    // Gregorian: 1932-1943 starts with five unsupported years.
+    expect(enabled(yearsOnPage('gregorian', 1932, SUPPORTED_DAYS))[0]).toBe(
+      1937
+    );
+    expect(pageOverlaps('gregorian', 1920, SUPPORTED_DAYS)).toBe(false);
+  });
+
+  it('respects minDate and maxDate when paging', () => {
+    const range = selectableRange(
+      daysFromCivil(2024, 3, 20),
+      daysFromCivil(2024, 5, 2)
+    );
+    expect(enabled(yearsOnPage('hijri', 1440, range))).toEqual([1445]);
+    expect(pageOverlaps('hijri', 1428, range)).toBe(false);
+    expect(pageOverlaps('hijri', 1452, range)).toBe(false);
+  });
+
+  it('names the years of the other calendar', () => {
+    // 1445 AH is 19 July 2023 - 6 July 2024.
+    expect(yearsSecondaryTitle('hijri', 1445, 1445, 'arabic')).toBe(
+      '٢٠٢٣ – ٢٠٢٤'
+    );
+    // 2024 is 19 Jumada al-Akhirah 1445 - 30 Jumada al-Akhirah 1446.
+    expect(yearsSecondaryTitle('gregorian', 2024, 2024, 'latin')).toBe(
+      '1445 – 1446'
+    );
+    // 1440-1451 AH is 11 September 2018 - 2 May 2030.
+    expect(yearsSecondaryTitle('hijri', 1440, 1451, 'latin')).toBe(
+      '2018 – 2030'
+    );
+    // Only supported days count: 1500-1511 AH is just 1500.
+    expect(yearsSecondaryTitle('hijri', 1500, 1511, 'latin')).toBe(
+      '2076 – 2077'
+    );
+    expect(yearsSecondaryTitle('hijri', 1512, 1523, 'latin')).toBe('');
+  });
+
+  it('moves the supported years with the Hijri adjustment', () => {
+    // With +2 the range is 12 March 1937 - 14 November 2077.
+    const range = selectableRange(undefined, undefined, 2);
+    expect(enabled(monthsOfYear('gregorian', 2077, range, 2))).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+    ]);
+    expect(yearOverlaps('hijri', 1356, range, 2)).toBe(true);
+    expect(yearOverlaps('hijri', 1501, range, 2)).toBe(false);
   });
 });

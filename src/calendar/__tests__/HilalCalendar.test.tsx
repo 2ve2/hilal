@@ -349,6 +349,156 @@ describe('HilalCalendar', () => {
     });
   });
 
+  describe('month and year picker', () => {
+    const button = (name: string | RegExp) =>
+      screen.getByRole('button', { name });
+    const openMonths = () => fireEvent.press(button(/^اختر الشهر والسنة/));
+
+    it('opens the months of the year from the title', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      expect(button('اختر الشهر والسنة، رمضان ١٤٤٥')).toBeOnTheScreen();
+
+      await openMonths();
+      expect(header()).toHaveTextContent('١٤٤٥');
+      expect(screen.getByText('٢٠٢٣ – ٢٠٢٤')).toBeOnTheScreen();
+      expect(screen.queryByText('أحد')).toBeNull(); // no weekday row
+      // The 12 months, not counting the "choose year" title button.
+      expect(button('رمضان ١٤٤٥')).toBeSelected();
+      expect(button('محرم ١٤٤٥')).toBeEnabled();
+      expect(
+        screen.getAllByRole('button', { name: /^[^،]+ ١٤٤٥$/ })
+      ).toHaveLength(12);
+    });
+
+    it('shows the days of the month that is picked', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await openMonths();
+      await fireEvent.press(button('محرم ١٤٤٥'));
+      expect(header()).toHaveTextContent('محرم ١٤٤٥');
+      expect(screen.getByText('أحد')).toBeOnTheScreen();
+    });
+
+    it('changes the year with the arrows', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await openMonths();
+      await fireEvent.press(button('السنة التالية'));
+      expect(header()).toHaveTextContent('١٤٤٦');
+      expect(button('رمضان ١٤٤٦')).not.toBeSelected();
+      await fireEvent.press(button('شوال ١٤٤٦'));
+      expect(header()).toHaveTextContent('شوال ١٤٤٦');
+    });
+
+    it('jumps across years with the year grid', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await openMonths();
+      await fireEvent.press(button('اختر السنة، ١٤٤٥'));
+      expect(header()).toHaveTextContent('١٤٤٠ – ١٤٥١');
+      expect(button('١٤٤٥')).toBeSelected();
+
+      await fireEvent.press(button('السنوات التالية'));
+      expect(header()).toHaveTextContent('١٤٥٢ – ١٤٦٣');
+      await fireEvent.press(button('١٤٦٠'));
+      expect(header()).toHaveTextContent('١٤٦٠');
+      await fireEvent.press(button('رجب ١٤٦٠'));
+      expect(header()).toHaveTextContent('رجب ١٤٦٠');
+    });
+
+    it('rings the current month', async () => {
+      // Today is 10 Ramadan 1445 (fake timers); the selection is in Rajab.
+      await render(<HilalCalendar defaultValue={new Date(2024, 0, 20)} />);
+      await openMonths();
+      expect(button('رجب ١٤٤٥')).toBeSelected();
+      expect(button('رمضان ١٤٤٥')).toHaveStyle({
+        borderColor: lightTheme.today,
+      });
+      expect(button('شوال ١٤٤٥')).not.toHaveStyle({
+        borderColor: lightTheme.today,
+      });
+    });
+
+    it('disables months and years outside minDate and maxDate', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          minDate={new Date(2024, 2, 20)}
+          maxDate={new Date(2024, 4, 2)}
+        />
+      );
+      await openMonths();
+      // 20 March - 2 May 2024 touches Ramadan and Shawwal 1445 only.
+      expect(button('رمضان ١٤٤٥')).toBeEnabled();
+      expect(button('شوال ١٤٤٥')).toBeEnabled();
+      expect(button('شعبان ١٤٤٥')).toBeDisabled();
+      expect(button('ذو القعدة ١٤٤٥')).toBeDisabled();
+      expect(button('السنة السابقة')).toBeDisabled();
+      expect(button('السنة التالية')).toBeDisabled();
+
+      await fireEvent.press(button('اختر السنة، ١٤٤٥'));
+      expect(button('١٤٤٥')).toBeEnabled();
+      expect(button('١٤٤٤')).toBeDisabled();
+      expect(button('السنوات السابقة')).toBeDisabled();
+      expect(button('السنوات التالية')).toBeDisabled();
+    });
+
+    it('stops at the edges of the supported range', async () => {
+      await render(<HilalCalendar defaultValue={new Date(1937, 2, 20)} />);
+      await openMonths();
+      expect(header()).toHaveTextContent('١٣٥٦');
+      expect(button('السنة السابقة')).toBeDisabled();
+      await fireEvent.press(button('اختر السنة، ١٣٥٦'));
+      expect(header()).toHaveTextContent('١٣٥٦ – ١٣٦٧');
+      expect(button('السنوات السابقة')).toBeDisabled();
+    });
+
+    it('works with the Gregorian grid', async () => {
+      await render(
+        <HilalCalendar defaultValue={MARCH_25} calendar="gregorian" />
+      );
+      await fireEvent.press(button('اختر الشهر والسنة، مارس ٢٠٢٤'));
+      expect(header()).toHaveTextContent('٢٠٢٤');
+      expect(screen.getByText('١٤٤٥ – ١٤٤٦')).toBeOnTheScreen();
+      expect(button('مارس ٢٠٢٤')).toBeSelected();
+      await fireEvent.press(button('يوليو ٢٠٢٤'));
+      expect(header()).toHaveTextContent('يوليو ٢٠٢٤');
+    });
+
+    it('speaks English', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} locale="en" />);
+      await fireEvent.press(button('Choose month and year, Ramadan 1445'));
+      expect(button('Ramadan 1445')).toBeSelected();
+      await fireEvent.press(button('Choose year, 1445'));
+      expect(header()).toHaveTextContent('1440 – 1451');
+      expect(button('Next years')).toBeEnabled();
+    });
+
+    it('goes back to the days when the calendar is switched', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await openMonths();
+      await fireEvent.press(button('ميلادي'));
+      expect(header()).toHaveTextContent('مارس ٢٠٢٤');
+      expect(screen.getByText('أحد')).toBeOnTheScreen();
+    });
+
+    it('lays the grids out right-to-left in Arabic', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      await openMonths();
+      const rowOf = (name: string) =>
+        StyleSheet.flatten(button(name).parent!.parent!.props.style)
+          .flexDirection;
+      expect(rowOf('محرم ١٤٤٥')).toBe('row-reverse');
+    });
+
+    it('can be turned off', async () => {
+      await render(
+        <HilalCalendar defaultValue={MARCH_25} showMonthYearPicker={false} />
+      );
+      expect(
+        screen.queryByRole('button', { name: /اختر الشهر والسنة/ })
+      ).toBeNull();
+      expect(header()).toHaveTextContent('رمضان ١٤٤٥');
+    });
+  });
+
   describe('controlled', () => {
     it('shows `value` and leaves selection to the parent', async () => {
       const onChange = jest.fn();
