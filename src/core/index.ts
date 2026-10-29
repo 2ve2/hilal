@@ -4,6 +4,7 @@ export {
   isValidHijri,
   toGregorian,
   toHijri,
+  type HijriConversionOptions,
 } from './convert';
 export { formatHijri, type FormatHijriOptions } from './format';
 export {
