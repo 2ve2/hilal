@@ -23,6 +23,9 @@ const TEXT_STYLES = [
   'dayText',
   'secondaryText',
   'pickerText',
+  // Only a weight, for the bold font.
+  'selectedText',
+  'todayText',
 ] as const;
 
 /** Text in columns of a fixed width: shrinks with the font scale only. */
@@ -211,7 +214,7 @@ function baseStyles(theme: HilalTheme) {
       backgroundColor: theme.border,
     },
     weekdays: {
-      marginBottom: 4,
+      marginBottom: 8,
     },
     weekday: {
       color: theme.textSecondary,
@@ -250,18 +253,23 @@ function baseStyles(theme: HilalTheme) {
     pressed: {
       backgroundColor: theme.border,
     },
+    // Medium, so the selected day and today stand out in bold.
     dayText: {
       color: theme.text,
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: '500',
     },
     secondaryText: {
       color: theme.textSecondary,
-      fontSize: 10,
+      fontSize: 11,
       marginTop: 1,
     },
     selectedText: {
       color: theme.onPrimary,
+      fontWeight: '700',
+    },
+    todayText: {
+      fontWeight: '700',
     },
     selectedSecondaryText: {
       color: theme.onPrimary,

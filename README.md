@@ -145,7 +145,7 @@ type HilalTheme = {
   radius: number; // corner radius of a day cell
   arrow?: string; // month arrows, default: text
   fontFamily?: string; // all text, default: the system font
-  fontFamilyBold?: string; // bold text: title, days, weekdays, toggle, picker
+  fontFamilyBold?: string; // bold text: title, selected day, today, weekdays, toggle, picker
   fontScale?: number; // multiplies every font size, default 1
 };
 ```

@@ -826,6 +826,31 @@ describe('HilalCalendar', () => {
     });
   });
 
+  it('sets day numbers in medium, the selected day and today in bold', async () => {
+    await render(<HilalCalendar defaultValue={MARCH_25} />);
+    // 25 March is selected, 20 March is today, 26 March neither.
+    const text = (name: RegExp, digits: string) =>
+      within(day(name)).getByText(digits);
+    expect(text(/^الثلاثاء، ١٦ رمضان/, '١٦')).toHaveStyle({
+      fontWeight: '500',
+    });
+    expect(text(/^الاثنين، ١٥ رمضان/, '١٥')).toHaveStyle({ fontWeight: '700' });
+    expect(text(/^الأربعاء، ١٠ رمضان/, '١٠')).toHaveStyle({
+      fontWeight: '700',
+    });
+  });
+
+  it('gives the toggle and the title 44 pt tall touch areas', async () => {
+    await render(<HilalCalendar defaultValue={MARCH_25} />);
+    expect(screen.getByRole('button', { name: 'هجري' })).toHaveProp('hitSlop', {
+      top: 8,
+      bottom: 8,
+    });
+    expect(
+      screen.getByRole('button', { name: /^اختر الشهر والسنة/ })
+    ).toHaveProp('hitSlop', { top: 9, bottom: 9, left: 6, right: 6 });
+  });
+
   it('accepts theme and style overrides', async () => {
     await render(
       <HilalCalendar

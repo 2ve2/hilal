@@ -59,6 +59,7 @@ export function DayCellView({
           style={[
             styles.dayText,
             disabled && styles.disabledText,
+            today && styles.todayText,
             selected && styles.selectedText,
           ]}
         >

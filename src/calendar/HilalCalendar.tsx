@@ -82,6 +82,9 @@ const LABELS: Record<Locale, Required<HilalLabels> & { separator: string }> = {
   },
 };
 
+const TITLE_HIT_SLOP = { top: 9, bottom: 9, left: 6, right: 6 };
+const TOGGLE_HIT_SLOP = { top: 8, bottom: 8 };
+
 /** What the grid shows: the days of a month, or the month or year picker. */
 type View_ = 'days' | 'months' | 'years';
 
@@ -554,6 +557,8 @@ export function HilalCalendar({
             return (
               <Pressable
                 key={option}
+                // 45 pt tall to the finger; the toggle itself stays slim.
+                hitSlop={TOGGLE_HIT_SLOP}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 onPress={() => toggleCalendar(option)}
@@ -583,7 +588,8 @@ export function HilalCalendar({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${titleAction.label}${labels.separator}${title}`}
-              hitSlop={6}
+              // 44 pt tall to the finger, like the arrows.
+              hitSlop={TITLE_HIT_SLOP}
               onPress={titleAction.onPress}
               style={({ pressed }) => [
                 styles.titleButton,

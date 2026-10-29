@@ -37,10 +37,17 @@ describe('createStyles fonts', () => {
       fontFamily: 'Cairo-Bold',
       fontWeight: 'normal',
     });
+    // Day numbers are medium; the selected day and today are bold.
     expect(styles.dayText).toMatchObject({
-      fontFamily: 'Cairo-Bold',
-      fontWeight: 'normal',
+      fontFamily: 'Cairo-Regular',
+      fontWeight: '500',
     });
+    for (const key of ['selectedText', 'todayText'] as const) {
+      expect(styles[key]).toMatchObject({
+        fontFamily: 'Cairo-Bold',
+        fontWeight: 'normal',
+      });
+    }
     expect(styles.subtitle).toEqual({
       ...base.subtitle,
       fontFamily: 'Cairo-Regular',
@@ -51,7 +58,7 @@ describe('createStyles fonts', () => {
     const styles = createStyles({ ...lightTheme, fontScale: 1.25 });
     expect(styles.title.fontSize).toBe(22.5);
     expect(styles.dayText.fontSize).toBe(20);
-    expect(styles.secondaryText.fontSize).toBe(12.5);
+    expect(styles.secondaryText.fontSize).toBe(13.8);
     expect(styles.day).toMatchObject({ height: 60, maxWidth: 60 });
     // Weekday and picker names keep their size, so they fit their columns.
     expect(styles.weekday).toEqual(base.weekday);
