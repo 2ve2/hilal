@@ -128,7 +128,7 @@ The [example app](example) shows every feature side by side. Run it with `yarn e
 
 Navigation never goes past `minDate`/`maxDate` or the edges of the supported range (1356–1500 AH), so the calendar can't show a broken month.
 
-To jump far, for example to a date of birth, press the month title: it opens the 12 months of that year, the arrows change the year, and pressing the year opens a page of 12 years. Months and years with no selectable day are disabled. Turn it off with `showMonthYearPicker={false}`.
+To jump far, for example to a date of birth, press the month title: it opens the 12 months of that year, the arrows change the year, and pressing the year opens a page of 12 years. Months and years with no selectable day are disabled. The grids fade in, keeping the calendar the same height, and switch without animation when the system asks to reduce motion. Turn the picker off with `showMonthYearPicker={false}`.
 
 ### Theme
 
