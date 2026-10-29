@@ -168,6 +168,7 @@ export function HilalCalendar({
   isDateDisabled,
   hijriAdjustment = 0,
   showMonthYearPicker = true,
+  weekdayFormat = 'short',
   theme: themeProp = 'auto',
   style,
   dayStyle,
@@ -405,7 +406,7 @@ export function HilalCalendar({
     };
   }
 
-  const weekdayNames = getWeekdayNames(locale, 'short');
+  const weekdayNames = getWeekdayNames(locale, weekdayFormat);
   const weekdays = Array.from(
     { length: 7 },
     (_, i) => weekdayNames[(firstDayOfWeek + i) % 7]!
@@ -600,8 +601,9 @@ export function HilalCalendar({
       ) : (
         <>
           <View style={[styles.weekdays, { flexDirection: row }]}>
-            {weekdays.map((name) => (
-              <Text key={name} style={styles.weekday}>
+            {/* Keyed by position: narrow names repeat (S, T). */}
+            {weekdays.map((name, i) => (
+              <Text key={i} style={styles.weekday}>
                 {name}
               </Text>
             ))}

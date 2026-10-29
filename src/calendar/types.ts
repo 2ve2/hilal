@@ -41,6 +41,11 @@ export type HilalCalendarProps = {
   direction?: 'rtl' | 'ltr' | 'auto';
   /** 0 = Sunday (default), 1 = Monday, 6 = Saturday. */
   firstDayOfWeek?: 0 | 1 | 6;
+  /**
+   * Weekday names above the days: 'short' (default, أحد / Sun) or
+   * 'narrow' (ح / S). Full names don't fit seven columns on a phone.
+   */
+  weekdayFormat?: 'short' | 'narrow';
 
   /** Earliest selectable day. */
   minDate?: Date;

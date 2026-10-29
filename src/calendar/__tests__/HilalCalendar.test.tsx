@@ -519,6 +519,41 @@ describe('HilalCalendar', () => {
     });
   });
 
+  describe('weekdayFormat', () => {
+    // The texts of the weekday row, first column first.
+    const weekdayRow = (anyName: string) =>
+      screen
+        .getAllByText(anyName)[0]!
+        .parent!.children.map((text) =>
+          typeof text === 'string' ? text : text.props.children
+        );
+
+    it('shows short names by default', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} locale="en" />);
+      expect(weekdayRow('Sun')).toEqual([
+        'Sun',
+        'Mon',
+        'Tue',
+        'Wed',
+        'Thu',
+        'Fri',
+        'Sat',
+      ]);
+    });
+
+    it('shows narrow names, repeated letters included', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          locale="en"
+          weekdayFormat="narrow"
+          firstDayOfWeek={1}
+        />
+      );
+      expect(weekdayRow('M')).toEqual(['M', 'T', 'W', 'T', 'F', 'S', 'S']);
+    });
+  });
+
   it('accepts theme and style overrides', async () => {
     await render(
       <HilalCalendar
