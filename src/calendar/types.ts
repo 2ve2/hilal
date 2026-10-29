@@ -50,6 +50,13 @@ export type HilalCalendarProps = {
   isDateDisabled?: (date: SelectedDate) => boolean;
 
   /**
+   * Shift the Hijri calendar by whole days, from -2 to 2, for places where
+   * the month started before or after Umm al-Qura. `1` makes every Hijri
+   * date one day later. Gregorian dates never change. Default 0.
+   */
+  hijriAdjustment?: number;
+
+  /**
    * 'light', 'dark', 'auto' (default, follows the system color scheme),
    * or a partial theme merged over the 'auto' theme.
    */

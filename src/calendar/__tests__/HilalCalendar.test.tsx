@@ -275,6 +275,80 @@ describe('HilalCalendar', () => {
     });
   });
 
+  describe('hijriAdjustment', () => {
+    // Umm al-Qura: 1 Ramadan 1445 is Monday 11 March 2024.
+    it('moves Hijri dates one day earlier with 1', async () => {
+      const onChange = jest.fn<(date: SelectedDate) => void>();
+      await render(
+        <HilalCalendar
+          defaultValue={new Date(2024, 2, 10)}
+          hijriAdjustment={1}
+          onChange={onChange}
+        />
+      );
+      expect(header()).toHaveTextContent('رمضان ١٤٤٥');
+      expect(day('الأحد، ١ رمضان ١٤٤٥ هـ، ١٠ مارس ٢٠٢٤')).toBeSelected();
+
+      await fireEvent.press(day(/^الاثنين، ٢ رمضان/));
+      expect(onChange).toHaveBeenCalledWith({
+        gregorian: new Date(2024, 2, 11),
+        hijri: { year: 1445, month: 9, day: 2 },
+        formatted: { gregorian: '١١ مارس ٢٠٢٤', hijri: '٢ رمضان ١٤٤٥ هـ' },
+      });
+    });
+
+    it('moves Hijri dates one day later with -1', async () => {
+      await render(
+        <HilalCalendar defaultValue={MARCH_25} hijriAdjustment={-1} />
+      );
+      expect(day('الثلاثاء، ١ رمضان ١٤٤٥ هـ، ١٢ مارس ٢٠٢٤')).toBeOnTheScreen();
+      // Sha'ban keeps its 29 days: 11 March is now 29 Sha'ban.
+      await fireEvent.press(
+        screen.getByRole('button', { name: 'الشهر السابق' })
+      );
+      expect(header()).toHaveTextContent('شعبان ١٤٤٥');
+      expect(day('الاثنين، ٢٩ شعبان ١٤٤٥ هـ، ١١ مارس ٢٠٢٤')).toBeOnTheScreen();
+    });
+
+    it('shifts the secondary dates of the Gregorian grid', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          calendar="gregorian"
+          locale="en"
+          hijriAdjustment={1}
+        />
+      );
+      expect(header()).toHaveTextContent('March 2024');
+      expect(day('Sunday, 10 March 2024, 1 Ramadan 1445 AH')).toBeEnabled();
+    });
+
+    it('moves the edges of the supported range', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={new Date(2077, 10, 14)}
+          calendar="gregorian"
+          locale="en"
+          hijriAdjustment={2}
+        />
+      );
+      // With +2, 30 Dhu al-Hijjah 1500 is 14 November 2077.
+      expect(day(/14 November 2077, 30 Dhu al-Hijjah 1500 AH$/)).toBeEnabled();
+      expect(day(/15 November 2077$/)).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Next month' })).toBeDisabled();
+    });
+
+    it('rejects values that are not an integer from -2 to 2', async () => {
+      const consoleError = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      await expect(
+        render(<HilalCalendar hijriAdjustment={3} />)
+      ).rejects.toThrow(/integer from -2 to 2/);
+      consoleError.mockRestore();
+    });
+  });
+
   describe('controlled', () => {
     it('shows `value` and leaves selection to the parent', async () => {
       const onChange = jest.fn();

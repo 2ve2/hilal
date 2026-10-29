@@ -9,6 +9,7 @@ import {
   getHijriMonthLength,
   hijriOfEpochDay,
   LAST_DAY,
+  supportedEpochDays,
 } from '../core/convert';
 import { civilFromDays, daysFromCivil, weekdayOfEpochDay } from '../core/days';
 import {
@@ -47,14 +48,23 @@ export type DayRange = { min: number; max: number };
 /** The days the calendar can ever show: the supported Hijri range. */
 export const SUPPORTED_DAYS: DayRange = { min: FIRST_DAY, max: LAST_DAY };
 
+/*
+ * `adjustment` below is the Hijri adjustment in days (see
+ * HijriConversionOptions). It moves which Gregorian days carry which
+ * Hijri date, and so the supported days; Gregorian dates never change.
+ */
+
 export function otherCalendar(calendar: CalendarType): CalendarType {
   return calendar === 'hijri' ? 'gregorian' : 'hijri';
 }
 
 /** Epoch day of the first day of a month. */
-export function monthStart({ calendar, year, month }: CalendarMonth) {
+export function monthStart(
+  { calendar, year, month }: CalendarMonth,
+  adjustment = 0
+) {
   return calendar === 'hijri'
-    ? epochDayOfHijri({ year, month, day: 1 }, 'monthStart')
+    ? epochDayOfHijri({ year, month, day: 1 }, 'monthStart', adjustment)
     : daysFromCivil(year, month, 1);
 }
 
@@ -68,9 +78,13 @@ export function monthLength(m: CalendarMonth) {
 }
 
 /** Year, month and day of an epoch day in either calendar. */
-export function dateInCalendar(epochDay: number, calendar: CalendarType) {
+export function dateInCalendar(
+  epochDay: number,
+  calendar: CalendarType,
+  adjustment = 0
+) {
   return calendar === 'hijri'
-    ? hijriOfEpochDay(epochDay)
+    ? hijriOfEpochDay(epochDay, 'dateInCalendar', adjustment)
     : civilFromDays(epochDay);
 }
 
@@ -80,11 +94,13 @@ export function dateInCalendar(epochDay: number, calendar: CalendarType) {
  */
 export function monthContaining(
   epochDay: number,
-  calendar: CalendarType
+  calendar: CalendarType,
+  adjustment = 0
 ): CalendarMonth {
   const { year, month } = dateInCalendar(
-    clampDay(epochDay, SUPPORTED_DAYS),
-    calendar
+    clampDay(epochDay, supportedEpochDays(adjustment)),
+    calendar,
+    adjustment
   );
   return { calendar, year, month };
 }
@@ -108,16 +124,22 @@ export function clampDay(epochDay: number, range: DayRange) {
  */
 export function selectableRange(
   minDay: number | undefined,
-  maxDay: number | undefined
+  maxDay: number | undefined,
+  adjustment = 0
 ): DayRange {
+  const supported = supportedEpochDays(adjustment);
   return {
-    min: Math.max(minDay ?? SUPPORTED_DAYS.min, SUPPORTED_DAYS.min),
-    max: Math.min(maxDay ?? SUPPORTED_DAYS.max, SUPPORTED_DAYS.max),
+    min: Math.max(minDay ?? supported.min, supported.min),
+    max: Math.min(maxDay ?? supported.max, supported.max),
   };
 }
 
 /** Whether any day of month `m` falls inside `range`. */
-export function monthOverlaps(m: CalendarMonth, range: DayRange) {
+export function monthOverlaps(
+  m: CalendarMonth,
+  range: DayRange,
+  adjustment = 0
+) {
   if (m.calendar === 'hijri') {
     // Hijri months outside the table have no start day at all.
     const { min, max } = monthRangeOfSupportedHijri();
@@ -126,7 +148,7 @@ export function monthOverlaps(m: CalendarMonth, range: DayRange) {
       return false;
     }
   }
-  const start = monthStart(m);
+  const start = monthStart(m, adjustment);
   const end = start + monthLength(m) - 1;
   return start <= range.max && end >= range.min;
 }
@@ -146,9 +168,11 @@ function monthRangeOfSupportedHijri() {
  */
 export function buildMonthGrid(
   m: CalendarMonth,
-  firstDayOfWeek: number
+  firstDayOfWeek: number,
+  adjustment = 0
 ): MonthGrid {
-  const start = monthStart(m);
+  const start = monthStart(m, adjustment);
+  const supported = supportedEpochDays(adjustment);
   const length = monthLength(m);
   const secondary = otherCalendar(m.calendar);
   const leading = (weekdayOfEpochDay(start) - firstDayOfWeek + 7) % 7;
@@ -156,12 +180,13 @@ export function buildMonthGrid(
   const slots: Array<DayCell | null> = Array(leading).fill(null);
   for (let day = 1; day <= length; day++) {
     const epochDay = start + day - 1;
-    const inRange =
-      epochDay >= SUPPORTED_DAYS.min && epochDay <= SUPPORTED_DAYS.max;
+    const inRange = epochDay >= supported.min && epochDay <= supported.max;
     slots.push({
       epochDay,
       day,
-      secondaryDay: inRange ? dateInCalendar(epochDay, secondary).day : null,
+      secondaryDay: inRange
+        ? dateInCalendar(epochDay, secondary, adjustment).day
+        : null,
     });
   }
   while (slots.length % 7 !== 0) {
@@ -190,14 +215,16 @@ export function monthTitle(m: CalendarMonth, locale: Locale, digits: Digits) {
 export function secondaryTitle(
   m: CalendarMonth,
   locale: Locale,
-  digits: Digits
+  digits: Digits,
+  adjustment = 0
 ) {
-  const start = monthStart(m);
-  const first = clampDay(start, SUPPORTED_DAYS);
-  const last = clampDay(start + monthLength(m) - 1, SUPPORTED_DAYS);
+  const start = monthStart(m, adjustment);
+  const supported = supportedEpochDays(adjustment);
+  const first = clampDay(start, supported);
+  const last = clampDay(start + monthLength(m) - 1, supported);
   const calendar = otherCalendar(m.calendar);
-  const from = dateInCalendar(first, calendar);
-  const to = dateInCalendar(last, calendar);
+  const from = dateInCalendar(first, calendar, adjustment);
+  const to = dateInCalendar(last, calendar, adjustment);
   const names = getMonthNames(calendar, locale);
   const fromName = names[from.month - 1];
   const toName = names[to.month - 1];
