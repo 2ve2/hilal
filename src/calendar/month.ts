@@ -238,3 +238,127 @@ export function secondaryTitle(
   }
   return `${fromName} ${year(from.year)} – ${toName} ${year(to.year)}`;
 }
+
+/*
+ * Month and year picker. Opened from the header: a grid of the 12 months
+ * of a year, and a grid of years, YEARS_PER_PAGE at a time.
+ */
+
+/** Years shown on one page of the year picker. */
+export const YEARS_PER_PAGE = 12;
+
+/** A month (1-12) or a year in the picker, and whether it can be picked. */
+export type PickerItem = { value: number; disabled: boolean };
+
+/**
+ * First and last epoch day of years `fromYear` to `toYear` of a calendar,
+ * limited to the supported range, or null when none of it is supported.
+ */
+function yearsSpan(
+  calendar: CalendarType,
+  fromYear: number,
+  toYear: number,
+  adjustment: number
+): DayRange | null {
+  const supported = supportedEpochDays(adjustment);
+  let start: number;
+  let end: number;
+  if (calendar === 'hijri') {
+    const first = Math.max(fromYear, hijriOfEpochDay(FIRST_DAY).year);
+    const last = Math.min(toYear, hijriOfEpochDay(LAST_DAY).year);
+    if (first > last) {
+      return null;
+    }
+    const lastMonth: CalendarMonth = { calendar, year: last, month: 12 };
+    start = monthStart({ calendar, year: first, month: 1 }, adjustment);
+    end = monthStart(lastMonth, adjustment) + monthLength(lastMonth) - 1;
+  } else {
+    start = daysFromCivil(fromYear, 1, 1);
+    end = daysFromCivil(toYear + 1, 1, 1) - 1;
+  }
+  const min = Math.max(start, supported.min);
+  const max = Math.min(end, supported.max);
+  return min <= max ? { min, max } : null;
+}
+
+/** Whether any day of `year` falls inside `range`. */
+export function yearOverlaps(
+  calendar: CalendarType,
+  year: number,
+  range: DayRange,
+  adjustment = 0
+) {
+  const span = yearsSpan(calendar, year, year, adjustment);
+  return span !== null && span.min <= range.max && span.max >= range.min;
+}
+
+/** The 12 months of `year`, disabled when none of their days is in `range`. */
+export function monthsOfYear(
+  calendar: CalendarType,
+  year: number,
+  range: DayRange,
+  adjustment = 0
+): PickerItem[] {
+  return Array.from({ length: 12 }, (_, i) => ({
+    value: i + 1,
+    disabled: !monthOverlaps(
+      { calendar, year, month: i + 1 },
+      range,
+      adjustment
+    ),
+  }));
+}
+
+/** First year of the year-picker page that contains `year`. */
+export function yearPageStart(year: number) {
+  return Math.floor(year / YEARS_PER_PAGE) * YEARS_PER_PAGE;
+}
+
+/** The years of the page starting at `pageStart`. */
+export function yearsOnPage(
+  calendar: CalendarType,
+  pageStart: number,
+  range: DayRange,
+  adjustment = 0
+): PickerItem[] {
+  return Array.from({ length: YEARS_PER_PAGE }, (_, i) => ({
+    value: pageStart + i,
+    disabled: !yearOverlaps(calendar, pageStart + i, range, adjustment),
+  }));
+}
+
+/** Whether the page starting at `pageStart` has any year that can be picked. */
+export function pageOverlaps(
+  calendar: CalendarType,
+  pageStart: number,
+  range: DayRange,
+  adjustment = 0
+) {
+  return yearsOnPage(calendar, pageStart, range, adjustment).some(
+    (year) => !year.disabled
+  );
+}
+
+/**
+ * The years of the other calendar that years `fromYear` to `toYear`
+ * overlap, for example "٢٠٢٣ – ٢٠٢٤" for 1445 AH, or a single year. Only
+ * days in the supported range count.
+ */
+export function yearsSecondaryTitle(
+  calendar: CalendarType,
+  fromYear: number,
+  toYear: number,
+  digits: Digits,
+  adjustment = 0
+) {
+  const span = yearsSpan(calendar, fromYear, toYear, adjustment);
+  if (span === null) {
+    return '';
+  }
+  const other = otherCalendar(calendar);
+  const from = dateInCalendar(span.min, other, adjustment).year;
+  const to = dateInCalendar(span.max, other, adjustment).year;
+  return from === to
+    ? formatNumber(from, digits)
+    : `${formatNumber(from, digits)} – ${formatNumber(to, digits)}`;
+}
