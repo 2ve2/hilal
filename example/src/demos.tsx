@@ -57,6 +57,20 @@ const sand = {
   radius: 24,
 };
 
+const teal = { arrow: '#0F766E', primary: '#0F766E', fontScale: 1.1 };
+
+const customStyles = {
+  title: { fontSize: 20 },
+  weekdayText: { color: '#0F766E' },
+  selectedDay: { borderRadius: 10 },
+};
+
+/** Shorter toggle texts: هـ / م, or AH / AD on the English page. */
+const shortLabels = (locale: Locale) =>
+  locale === 'ar'
+    ? { hijri: 'هـ', gregorian: 'م' }
+    : { hijri: 'AH', gregorian: 'AD' };
+
 function ControlledDemo({ locale }: { locale: Locale }) {
   const [date, setDate] = useState<SelectedDate>();
   return (
@@ -144,6 +158,42 @@ export const DEMOS: Demo[] = [
 }}`,
       ]),
     Component: ({ locale }) => <HilalCalendar locale={locale} theme={sand} />,
+  },
+  {
+    id: 'customized',
+    title: () => 'Customized',
+    description: () =>
+      'Larger text, colored arrows, one-letter weekdays, shorter toggle texts and styles for single parts.',
+    dark: 'auto',
+    code: (locale) => {
+      const { hijri, gregorian } = shortLabels(locale);
+      return jsx(locale, [
+        `theme={{
+  arrow: '${teal.arrow}',
+  primary: '${teal.primary}',
+  fontScale: ${teal.fontScale},
+}}`,
+        'weekdayFormat="narrow"',
+        `labels={{
+  hijri: '${hijri}',
+  gregorian: '${gregorian}',
+}}`,
+        `styles={{
+  title: { fontSize: ${customStyles.title.fontSize} },
+  weekdayText: { color: '${customStyles.weekdayText.color}' },
+  selectedDay: { borderRadius: ${customStyles.selectedDay.borderRadius} },
+}}`,
+      ]);
+    },
+    Component: ({ locale }) => (
+      <HilalCalendar
+        locale={locale}
+        theme={teal}
+        weekdayFormat="narrow"
+        labels={shortLabels(locale)}
+        styles={customStyles}
+      />
+    ),
   },
   {
     id: 'range',
