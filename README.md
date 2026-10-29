@@ -25,7 +25,7 @@ iOS, Android, web and Expo Go. Zero dependencies. Arabic-first.
 - **Arabic-first**: Arabic month and day names, Arabic-Indic digits (١٢٣), proper right-to-left layout. English with Latin digits is one prop away.
 - **Cross-platform**: pure TypeScript and React Native core components. The same code runs on iOS, Android, the web and in Expo Go, with no native modules.
 - **Zero runtime dependencies**: no moment, no dayjs, no `Intl` calendars at runtime.
-- **Themeable**: light, dark, follow the system, or your own colors.
+- **Customizable**: light, dark, follow the system, or your own colors and fonts; styles for every part and your own button texts.
 - **Accessible**: every day is a button with a full spoken date and its selected and disabled state.
 - **The engine is public**: convert and format Hijri dates without using the UI.
 
@@ -114,14 +114,17 @@ The [example app](example) shows every feature side by side. Run it with `yarn e
 | `digits`              | `'arabic' \| 'latin'`                                | `'arabic'` for `ar`, else `'latin'` | Arabic-Indic (١٢٣) or Latin (123) digits.                                                                                                                               |
 | `direction`           | `'rtl' \| 'ltr' \| 'auto'`                           | `'auto'`                            | `auto` is right-to-left when the app is RTL (`I18nManager.isRTL`) or the locale is `ar`.                                                                                |
 | `firstDayOfWeek`      | `0 \| 1 \| 6`                                        | `0`                                 | `0` Sunday, `1` Monday, `6` Saturday.                                                                                                                                   |
+| `weekdayFormat`       | `'short' \| 'narrow'`                                | `'short'`                           | Weekday names above the days: أحد / Sun, or ح / S.                                                                                                                      |
 | `minDate`             | `Date`                                               |                                     | Earliest selectable day. Navigation stops at its month.                                                                                                                 |
 | `maxDate`             | `Date`                                               |                                     | Latest selectable day. Navigation stops at its month.                                                                                                                   |
 | `isDateDisabled`      | `(date: SelectedDate) => boolean`                    |                                     | Return `true` to disable a day.                                                                                                                                         |
 | `hijriAdjustment`     | `number`                                             | `0`                                 | Shift Hijri dates by whole days, from `-2` to `2`. `1` makes every Hijri date one day later. See [Adjusting to local moon sighting](#adjusting-to-local-moon-sighting). |
 | `showMonthYearPicker` | `boolean`                                            | `true`                              | Pressing the month title opens a grid of months, and from there a grid of years.                                                                                        |
 | `theme`               | `'light' \| 'dark' \| 'auto' \| Partial<HilalTheme>` | `'auto'`                            | `auto` follows `useColorScheme()`. A partial theme is merged over the `auto` theme.                                                                                     |
+| `styles`              | `HilalStyles`                                        |                                     | Styles for parts of the calendar. See [Customization](#customization).                                                                                                  |
+| `labels`              | `HilalLabels`                                        |                                     | Texts of the toggle and buttons. See [Customization](#customization).                                                                                                   |
 | `style`               | `StyleProp<ViewStyle>`                               |                                     | Style of the outer container.                                                                                                                                           |
-| `dayStyle`            | `StyleProp<ViewStyle>`                               |                                     | Style of every day cell.                                                                                                                                                |
+| `dayStyle`            | `StyleProp<ViewStyle>`                               |                                     | Style of every day cell. Unlike `styles.day`, it also wins over the selected and today styles.                                                                          |
 
 Navigation never goes past `minDate`/`maxDate` or the edges of the supported range (1356–1500 AH), so the calendar can't show a broken month.
 
@@ -132,7 +135,7 @@ To jump far, for example to a date of birth, press the month title: it opens the
 ```ts
 type HilalTheme = {
   background: string; // calendar background
-  text: string; // day numbers, month title, arrows
+  text: string; // day numbers, month title
   textSecondary: string; // secondary dates, weekday names
   primary: string; // selected day, active toggle
   onPrimary: string; // text on primary
@@ -140,10 +143,61 @@ type HilalTheme = {
   disabled: string; // disabled days and arrows
   border: string; // toggle outline
   radius: number; // corner radius of a day cell
+  arrow?: string; // month arrows, default: text
+  fontFamily?: string; // all text, default: the system font
+  fontFamilyBold?: string; // bold text: title, days, weekdays, toggle, picker
+  fontScale?: number; // multiplies every font size, default 1
 };
 ```
 
 `lightTheme` and `darkTheme` are exported if you want to build a full theme from one of them.
+
+### Customization
+
+Fonts go in the theme. Load them first (for example with `expo-font`) and pass their names. With `fontFamilyBold`, the bold text uses that font as it is, without a bold weight on top. `fontScale` makes all text larger or smaller, and day cells grow with larger text. Weekday names and the month and year names in the picker never grow, so they still fit their columns on small phones.
+
+```tsx
+<HilalCalendar
+  theme={{
+    fontFamily: 'Cairo-Regular',
+    fontFamilyBold: 'Cairo-Bold',
+    fontScale: 1.1,
+    arrow: '#0F766E',
+  }}
+/>
+```
+
+For anything else, `styles` takes a style for each part, merged over the theme's styles:
+
+```tsx
+<HilalCalendar
+  styles={{
+    title: { fontSize: 20 },
+    selectedDay: { borderRadius: 8 },
+    weekdayText: { color: '#6B7280' },
+  }}
+/>
+```
+
+| Part                     | Slots                                                        |
+| ------------------------ | ------------------------------------------------------------ |
+| Container                | `container`                                                  |
+| Hijri / Gregorian toggle | `toggle`, `toggleOption`, `toggleText`                       |
+| Header                   | `header`, `title`, `subtitle`, `arrow`                       |
+| Weekday names            | `weekdayText`                                                |
+| Days                     | `day`, `dayText`, `secondaryDayText`                         |
+| Day states               | `selectedDay`, `selectedDayText`, `today`, `disabledDayText` |
+| Month and year picker    | `pickerItem`, `pickerText`                                   |
+
+The day states apply to day cells only, not to the month and year picker.
+
+`labels` replaces the texts of the toggle, and the names screen readers give the buttons. Labels you don't pass keep the locale's text:
+
+```tsx
+<HilalCalendar labels={{ hijri: 'هـ', gregorian: 'م' }} />
+```
+
+The keys are `hijri`, `gregorian`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`, `chooseMonth` and `chooseYear`.
 
 ## Core API
 
@@ -174,7 +228,7 @@ Without options, `formatHijri` returns ١ رمضان ١٤٤٦ هـ (Arabic, Arab
 | `getSupportedRange(): { min: HijriDate; max: HijriDate }` | `1 Muharram 1356` to `30 Dhu al-Hijjah 1500`.                                                           |
 | `formatHijri(hijri, { locale?, digits? }): string`        | Arabic by default (١ رمضان ١٤٤٦ هـ), or `'1 Ramadan 1446 AH'` with `locale: 'en'`.                      |
 | `getMonthNames(calendar, locale): string[]`               | 12 month names. Arabic Gregorian names use the Gulf style (يناير، فبراير، مارس), not the Levantine one. |
-| `getWeekdayNames(locale, format?): string[]`              | 7 weekday names, Sunday first (matches `Date#getDay()`), `'long'` or `'short'`.                         |
+| `getWeekdayNames(locale, format?): string[]`              | 7 weekday names, Sunday first (matches `Date#getDay()`), `'long'`, `'short'` or `'narrow'`.             |
 | `toArabicDigits(input: string \| number): string`         | `'1446'` → `'١٤٤٦'`.                                                                                    |
 
 `HijriDate` is `{ year: number; month: number; day: number }` with `month` from 1 to 12. Dates outside the supported range (1937-03-14 to 2077-11-16) throw a `RangeError`.
@@ -229,7 +283,6 @@ Gregorian dates never change. The shift moves the whole calendar, so months keep
 Ideas for v2:
 
 - Range selection
-- Quick year and month picker
 - Event dots on days
 - Swipe between months
 - Ready-made bottom sheet and modal variants
