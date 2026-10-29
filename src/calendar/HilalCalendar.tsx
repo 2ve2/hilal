@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 
-import { hijriOfEpochDay } from '../core/convert';
+import { checkAdjustment, hijriOfEpochDay } from '../core/convert';
 import {
   civilFromDays,
   epochDayOfLocalDate,
@@ -77,9 +77,10 @@ function epochDayOf(date: Date | undefined) {
 function selectedDateOf(
   epochDay: number,
   locale: Locale,
-  digits: Digits
+  digits: Digits,
+  adjustment: number
 ): SelectedDate {
-  const hijri = hijriOfEpochDay(epochDay);
+  const hijri = hijriOfEpochDay(epochDay, 'HilalCalendar', adjustment);
   return {
     gregorian: localDateOfEpochDay(epochDay),
     hijri,
@@ -106,11 +107,13 @@ function visibleMonth(
   preferred: CalendarMonth,
   calendar: CalendarType,
   range: DayRange,
-  fallbackDay: number
+  fallbackDay: number,
+  adjustment: number
 ) {
-  return preferred.calendar === calendar && monthOverlaps(preferred, range)
+  return preferred.calendar === calendar &&
+    monthOverlaps(preferred, range, adjustment)
     ? preferred
-    : monthContaining(clampDay(fallbackDay, range), calendar);
+    : monthContaining(clampDay(fallbackDay, range), calendar, adjustment);
 }
 
 /**
@@ -132,10 +135,12 @@ export function HilalCalendar({
   minDate,
   maxDate,
   isDateDisabled,
+  hijriAdjustment = 0,
   theme: themeProp = 'auto',
   style,
   dayStyle,
 }: HilalCalendarProps) {
+  const adjustment = checkAdjustment(hijriAdjustment, 'HilalCalendar');
   const digits = digitsProp ?? defaultDigits(locale);
   const labels = LABELS[locale];
   // React Native Web leaves I18nManager.isRTL undefined, not false.
@@ -165,8 +170,8 @@ export function HilalCalendar({
   const minDay = epochDayOf(minDate);
   const maxDay = epochDayOf(maxDate);
   const range = useMemo(
-    () => selectableRange(minDay, maxDay),
-    [minDay, maxDay]
+    () => selectableRange(minDay, maxDay, adjustment),
+    [minDay, maxDay, adjustment]
   );
   const today = epochDayOfLocalDate(new Date());
 
@@ -180,18 +185,29 @@ export function HilalCalendar({
   const [calendar, setCalendar] = useState(calendarProp);
   const [lastCalendarProp, setLastCalendarProp] = useState(calendarProp);
   const [month, setMonth] = useState(() =>
-    monthContaining(clampDay(selectedDay ?? today, range), calendarProp)
+    monthContaining(
+      clampDay(selectedDay ?? today, range),
+      calendarProp,
+      adjustment
+    )
   );
   const [lastSelectedDay, setLastSelectedDay] = useState(selectedDay);
 
   const switchTo = (next: CalendarType, current: CalendarMonth) => {
     setCalendar(next);
     // Keep the selected day in view, or else the month being looked at.
-    const anchor = selectedDay ?? clampDay(monthStart(current), range);
-    setMonth(monthContaining(clampDay(anchor, range), next));
+    const anchor =
+      selectedDay ?? clampDay(monthStart(current, adjustment), range);
+    setMonth(monthContaining(clampDay(anchor, range), next, adjustment));
   };
 
-  const shown = visibleMonth(month, calendar, range, selectedDay ?? today);
+  const shown = visibleMonth(
+    month,
+    calendar,
+    range,
+    selectedDay ?? today,
+    adjustment
+  );
 
   // Adjust state while rendering when props change (React's recommended
   // alternative to effects for derived state).
@@ -206,7 +222,7 @@ export function HilalCalendar({
       selectedDay >= range.min &&
       selectedDay <= range.max
     ) {
-      const containing = monthContaining(selectedDay, calendar);
+      const containing = monthContaining(selectedDay, calendar, adjustment);
       if (containing.year !== shown.year || containing.month !== shown.month) {
         setMonth(containing);
       }
@@ -214,10 +230,10 @@ export function HilalCalendar({
   }
 
   const grid = useMemo(
-    () => buildMonthGrid(shown, firstDayOfWeek),
+    () => buildMonthGrid(shown, firstDayOfWeek, adjustment),
     // `shown` is a new object on every render; its fields identify it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shown.calendar, shown.year, shown.month, firstDayOfWeek]
+    [shown.calendar, shown.year, shown.month, firstDayOfWeek, adjustment]
   );
 
   // Everything about a day except `selected` and `today`, so that changing
@@ -235,7 +251,9 @@ export function HilalCalendar({
             !inSupportedRange ||
             epochDay < range.min ||
             epochDay > range.max ||
-            (isDateDisabled?.(selectedDateOf(epochDay, locale, digits)) ??
+            (isDateDisabled?.(
+              selectedDateOf(epochDay, locale, digits, adjustment)
+            ) ??
               false);
           const weekday = getWeekdayNames(locale)[weekdayOfEpochDay(epochDay)];
           const gregorianText = formatGregorian(civilFromDays(epochDay), {
@@ -244,7 +262,10 @@ export function HilalCalendar({
           });
           const spoken = inSupportedRange
             ? [
-                formatHijri(hijriOfEpochDay(epochDay), { locale, digits }),
+                formatHijri(
+                  hijriOfEpochDay(epochDay, 'HilalCalendar', adjustment),
+                  { locale, digits }
+                ),
                 gregorianText,
               ]
             : [gregorianText];
@@ -272,6 +293,7 @@ export function HilalCalendar({
       digits,
       showSecondaryDate,
       labels,
+      adjustment,
     ]
   );
 
@@ -279,7 +301,7 @@ export function HilalCalendar({
     if (value === undefined) {
       setInternalDay(epochDay);
     }
-    onChange?.(selectedDateOf(epochDay, locale, digits));
+    onChange?.(selectedDateOf(epochDay, locale, digits, adjustment));
   });
 
   const toggleCalendar = (next: CalendarType) => {
@@ -292,8 +314,8 @@ export function HilalCalendar({
 
   const previous = addMonths(shown, -1);
   const next = addMonths(shown, 1);
-  const canGoBack = monthOverlaps(previous, range);
-  const canGoForward = monthOverlaps(next, range);
+  const canGoBack = monthOverlaps(previous, range, adjustment);
+  const canGoForward = monthOverlaps(next, range, adjustment);
 
   const weekdayNames = getWeekdayNames(locale, 'short');
   const weekdays = Array.from(
@@ -361,7 +383,7 @@ export function HilalCalendar({
             {monthTitle(shown, locale, digits)}
           </Text>
           <Text style={styles.subtitle}>
-            {secondaryTitle(shown, locale, digits)}
+            {secondaryTitle(shown, locale, digits, adjustment)}
           </Text>
         </View>
         {renderArrow('next')}
