@@ -48,31 +48,16 @@ import {
   type DayRange,
 } from './month';
 import { PickerGrid, type PickerGridItem } from './PickerGrid';
-import { createStyles } from './styles';
+import { createStyles, withSlots } from './styles';
 import { resolveTheme } from './theme';
-import type { HilalCalendarProps, SelectedDate } from './types';
+import type { HilalCalendarProps, HilalLabels, SelectedDate } from './types';
 
-const LABELS: Record<
-  Locale,
-  {
-    hijri: string;
-    gregorian: string;
-    previous: string;
-    next: string;
-    previousYear: string;
-    nextYear: string;
-    previousYears: string;
-    nextYears: string;
-    chooseMonth: string;
-    chooseYear: string;
-    separator: string;
-  }
-> = {
+const LABELS: Record<Locale, Required<HilalLabels> & { separator: string }> = {
   ar: {
     hijri: 'هجري',
     gregorian: 'ميلادي',
-    previous: 'الشهر السابق',
-    next: 'الشهر التالي',
+    previousMonth: 'الشهر السابق',
+    nextMonth: 'الشهر التالي',
     previousYear: 'السنة السابقة',
     nextYear: 'السنة التالية',
     previousYears: 'السنوات السابقة',
@@ -84,8 +69,8 @@ const LABELS: Record<
   en: {
     hijri: 'Hijri',
     gregorian: 'Gregorian',
-    previous: 'Previous month',
-    next: 'Next month',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
     previousYear: 'Previous year',
     nextYear: 'Next year',
     previousYears: 'Previous years',
@@ -168,13 +153,31 @@ export function HilalCalendar({
   isDateDisabled,
   hijriAdjustment = 0,
   showMonthYearPicker = true,
+  weekdayFormat = 'short',
   theme: themeProp = 'auto',
+  styles: stylesProp,
+  labels: labelsProp,
   style,
   dayStyle,
 }: HilalCalendarProps) {
   const adjustment = checkAdjustment(hijriAdjustment, 'HilalCalendar');
   const digits = digitsProp ?? defaultDigits(locale);
-  const labels = LABELS[locale];
+  // Compared by value, so an inline object doesn't recompute every day.
+  const labelsKey = JSON.stringify(labelsProp);
+  const labels = useMemo(
+    () => {
+      const merged = { ...LABELS[locale] };
+      for (const [key, text] of Object.entries(labelsProp ?? {})) {
+        // A label left undefined keeps the default.
+        if (text !== undefined) {
+          merged[key as keyof HilalLabels] = text;
+        }
+      }
+      return merged;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locale, labelsKey]
+  );
   // React Native Web leaves I18nManager.isRTL undefined, not false.
   const appRTL = I18nManager.isRTL === true;
   const rtl =
@@ -192,7 +195,13 @@ export function HilalCalendar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [themeKey, colorScheme]
   );
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  // An inline `styles` prop is compared by value too.
+  const stylesKey = JSON.stringify(stylesProp);
+  const { styles, dayStyles } = useMemo(
+    () => withSlots(createStyles(theme), stylesProp),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [theme, stylesKey]
+  );
   // Same for an inline dayStyle: a new object every render would re-render
   // every day cell.
   const dayStyleKey = JSON.stringify(dayStyle);
@@ -394,18 +403,18 @@ export function HilalCalendar({
     arrows = {
       previous: {
         enabled: monthOverlaps(previous, range, adjustment),
-        label: labels.previous,
+        label: labels.previousMonth,
         onPress: () => setMonth(previous),
       },
       next: {
         enabled: monthOverlaps(next, range, adjustment),
-        label: labels.next,
+        label: labels.nextMonth,
         onPress: () => setMonth(next),
       },
     };
   }
 
-  const weekdayNames = getWeekdayNames(locale, 'short');
+  const weekdayNames = getWeekdayNames(locale, weekdayFormat);
   const weekdays = Array.from(
     { length: 7 },
     (_, i) => weekdayNames[(firstDayOfWeek + i) % 7]!
@@ -427,7 +436,7 @@ export function HilalCalendar({
       >
         <Chevron
           direction={pointsLeft ? 'left' : 'right'}
-          color={enabled ? theme.text : theme.disabled}
+          color={enabled ? (theme.arrow ?? theme.text) : theme.disabled}
         />
       </Pressable>
     );
@@ -600,8 +609,9 @@ export function HilalCalendar({
       ) : (
         <>
           <View style={[styles.weekdays, { flexDirection: row }]}>
-            {weekdays.map((name) => (
-              <Text key={name} style={styles.weekday}>
+            {/* Keyed by position: narrow names repeat (S, T). */}
+            {weekdays.map((name, i) => (
+              <Text key={i} style={styles.weekday}>
                 {name}
               </Text>
             ))}
@@ -618,7 +628,7 @@ export function HilalCalendar({
                     {...cell}
                     selected={cell.epochDay === selectedDay}
                     today={cell.epochDay === today}
-                    styles={styles}
+                    styles={dayStyles}
                     dayStyle={stableDayStyle}
                     onSelect={onSelect}
                   />

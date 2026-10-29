@@ -62,6 +62,22 @@ describe('getWeekdayNames', () => {
   });
 });
 
+describe('narrow weekday names', () => {
+  it('match ICU', () => {
+    for (const locale of ['ar', 'en'] as const) {
+      const icu = new Intl.DateTimeFormat(locale, {
+        weekday: 'narrow',
+        timeZone: 'UTC',
+      });
+      // 7 January 2024 was a Sunday.
+      const expected = [0, 1, 2, 3, 4, 5, 6].map((i) =>
+        icu.format(new Date(Date.UTC(2024, 0, 7 + i)))
+      );
+      expect(getWeekdayNames(locale, 'narrow')).toEqual(expected);
+    }
+  });
+});
+
 describe('toArabicDigits', () => {
   it('converts every Latin digit', () => {
     expect(toArabicDigits('0123456789')).toBe('٠١٢٣٤٥٦٧٨٩');

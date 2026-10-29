@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 import type { HilalTheme } from './theme';
+import type { HilalStyles } from './types';
 
 /** Fills the parent; left/right are both 0, so RTL mirroring can't move it. */
 const fill = {
@@ -13,8 +14,149 @@ const fill = {
 
 export type CalendarStyles = ReturnType<typeof createStyles>;
 
+/** The text styles, which take the theme's fonts and font scale. */
+const TEXT_STYLES = [
+  'toggleText',
+  'title',
+  'subtitle',
+  'weekday',
+  'dayText',
+  'secondaryText',
+  'caret',
+  'pickerText',
+] as const;
+
+/** Text in columns of a fixed width: shrinks with the font scale only. */
+const FIXED_WIDTH_TEXT = new Set<string>(['weekday', 'pickerText']);
+
+type TextStyleObject = {
+  fontSize?: number;
+  lineHeight?: number;
+  fontWeight?: string;
+  fontFamily?: string;
+};
+
 export function createStyles(theme: HilalTheme) {
-  return StyleSheet.create({
+  return StyleSheet.create(applyFonts(baseStyles(theme), theme));
+}
+
+/**
+ * Applies `fontFamily`, `fontFamilyBold` and `fontScale`. Only adds keys
+ * when the theme sets them, so a theme without fonts gives exactly the
+ * base styles.
+ */
+function applyFonts<T extends Record<string, object>>(
+  styles: T,
+  theme: HilalTheme
+): T {
+  const scale = theme.fontScale ?? 1;
+  if (!(Number.isFinite(scale) && scale > 0)) {
+    throw new RangeError(
+      `HilalCalendar: theme.fontScale must be a positive number, got ${scale}`
+    );
+  }
+  const { fontFamily, fontFamilyBold } = theme;
+  if (scale === 1 && !fontFamily && !fontFamilyBold) {
+    return styles;
+  }
+  const out: Record<string, object> = { ...styles };
+  for (const key of TEXT_STYLES) {
+    const style = { ...(styles[key] as TextStyleObject) };
+    // Weekday names (أربعاء خميس) only just fit seven columns on small
+    // phones, and long month names (Dhu al-Qi'dah) three, so these never
+    // grow.
+    const factor = FIXED_WIDTH_TEXT.has(key) ? Math.min(scale, 1) : scale;
+    if (factor !== 1) {
+      if (style.fontSize) style.fontSize = round(style.fontSize * factor);
+      if (style.lineHeight) style.lineHeight = round(style.lineHeight * factor);
+    }
+    const bold = style.fontWeight === '600' || style.fontWeight === '700';
+    // The caret keeps the system font: a custom font may lack ▾.
+    if (key !== 'caret') {
+      if (bold && fontFamilyBold) {
+        // A bold font file plus a bold weight would be bolded twice.
+        style.fontFamily = fontFamilyBold;
+        style.fontWeight = 'normal';
+      } else if (fontFamily) {
+        style.fontFamily = fontFamily;
+      }
+    }
+    out[key] = style;
+  }
+  if (scale > 1) {
+    // Larger text needs larger day cells.
+    const day = styles.day as { height: number; maxWidth: number };
+    out.day = {
+      ...day,
+      height: round(day.height * scale),
+      maxWidth: round(day.maxWidth * scale),
+    };
+  }
+  return out as T;
+}
+
+const round = (n: number) => Math.round(n * 10) / 10;
+
+/** The calendar style each `styles` slot is merged into. */
+const SLOTS = {
+  container: 'container',
+  toggle: 'toggle',
+  toggleOption: 'toggleOption',
+  toggleText: 'toggleText',
+  header: 'header',
+  title: 'title',
+  subtitle: 'subtitle',
+  arrow: 'arrow',
+  weekdayText: 'weekday',
+  day: 'day',
+  dayText: 'dayText',
+  secondaryDayText: 'secondaryText',
+  pickerItem: 'pickerItem',
+  pickerText: 'pickerText',
+} as const;
+
+/**
+ * The slots for day states. The picker shares these calendar styles, so
+ * they are merged into a copy used only by the day cells.
+ */
+const DAY_SLOTS = {
+  selectedDay: 'selected',
+  selectedDayText: 'selectedText',
+  today: 'today',
+  disabledDayText: 'disabledText',
+} as const;
+
+/**
+ * Merges the `styles` prop over the calendar styles: `styles` for the
+ * calendar and the picker, `dayStyles` for the day cells. Slots that are
+ * not set leave the calendar styles as they are.
+ */
+export function withSlots(
+  styles: CalendarStyles,
+  slots: HilalStyles | undefined
+): { styles: CalendarStyles; dayStyles: CalendarStyles } {
+  if (!slots) {
+    return { styles, dayStyles: styles };
+  }
+  const merge = (
+    target: CalendarStyles,
+    map: Record<string, keyof CalendarStyles>
+  ) => {
+    const out: Record<string, unknown> = { ...target };
+    for (const [slot, key] of Object.entries(map)) {
+      const style = slots[slot as keyof HilalStyles];
+      if (style) {
+        out[key] = StyleSheet.flatten([target[key], style]);
+      }
+    }
+    return out as CalendarStyles;
+  };
+  const merged = merge(styles, SLOTS);
+  return { styles: merged, dayStyles: merge(merged, DAY_SLOTS) };
+}
+
+function baseStyles(theme: HilalTheme) {
+  return {
     container: {
       backgroundColor: theme.background,
       borderRadius: 20,
@@ -191,5 +333,5 @@ export function createStyles(theme: HilalTheme) {
       lineHeight: 18,
       textAlign: 'center',
     },
-  });
+  } as const;
 }

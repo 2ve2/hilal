@@ -519,6 +519,221 @@ describe('HilalCalendar', () => {
     });
   });
 
+  describe('weekdayFormat', () => {
+    // The texts of the weekday row, first column first.
+    const weekdayRow = (anyName: string) =>
+      screen
+        .getAllByText(anyName)[0]!
+        .parent!.children.map((text) =>
+          typeof text === 'string' ? text : text.props.children
+        );
+
+    it('shows short names by default', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} locale="en" />);
+      expect(weekdayRow('Sun')).toEqual([
+        'Sun',
+        'Mon',
+        'Tue',
+        'Wed',
+        'Thu',
+        'Fri',
+        'Sat',
+      ]);
+    });
+
+    it('shows narrow names, repeated letters included', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          locale="en"
+          weekdayFormat="narrow"
+          firstDayOfWeek={1}
+        />
+      );
+      expect(weekdayRow('M')).toEqual(['M', 'T', 'W', 'T', 'F', 'S', 'S']);
+    });
+  });
+
+  describe('styles', () => {
+    it('merges each slot into its part of the calendar', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          minDate={new Date(2024, 2, 14)}
+          styles={{
+            toggle: { borderColor: '#000001' },
+            toggleOption: { paddingHorizontal: 21 },
+            toggleText: { fontSize: 11 },
+            header: { marginBottom: 21 },
+            title: { color: '#000002' },
+            subtitle: { color: '#000003' },
+            arrow: { width: 41 },
+            weekdayText: { color: '#000004' },
+            day: { height: 51 },
+            dayText: { fontSize: 19 },
+            secondaryDayText: { fontSize: 9 },
+            selectedDay: { borderRadius: 2 },
+            selectedDayText: { fontWeight: '900' },
+            today: { borderColor: '#000005' },
+            disabledDayText: { color: '#000006' },
+          }}
+        />
+      );
+      const toggleOption = screen.getByRole('button', { name: 'هجري' });
+      expect(toggleOption).toHaveStyle({ paddingHorizontal: 21 });
+      expect(toggleOption.parent).toHaveStyle({ borderColor: '#000001' });
+      expect(screen.getByText('هجري')).toHaveStyle({ fontSize: 11 });
+      expect(screen.getByTestId('hilal-header')).toHaveStyle({
+        marginBottom: 21,
+        // The layout direction still wins.
+        flexDirection: 'row-reverse',
+      });
+      expect(screen.getByText('رمضان ١٤٤٥')).toHaveStyle({
+        color: '#000002',
+        fontWeight: '700',
+      });
+      expect(screen.getByText('مارس – أبريل ٢٠٢٤')).toHaveStyle({
+        color: '#000003',
+      });
+      expect(screen.getByRole('button', { name: 'الشهر التالي' })).toHaveStyle({
+        width: 41,
+        height: 40,
+      });
+      expect(screen.getByText('أحد')).toHaveStyle({ color: '#000004' });
+
+      // 25 March: selected. 20 March: today. 13 March: disabled.
+      const selected = day(/^الاثنين، ١٥ رمضان/);
+      const today = day(/^الأربعاء، ١٠ رمضان/);
+      const plain = day(/^الثلاثاء، ١٦ رمضان/);
+      const disabled = day(/^الأربعاء، ٣ رمضان/);
+      expect(plain).toHaveStyle({ height: 51, borderColor: 'transparent' });
+      expect(selected).toHaveStyle({ height: 51, borderRadius: 2 });
+      expect(today).toHaveStyle({ borderColor: '#000005' });
+      expect(within(plain).getByText('١٦')).toHaveStyle({ fontSize: 19 });
+      expect(within(plain).getByText('٢٦')).toHaveStyle({ fontSize: 9 });
+      expect(within(selected).getByText('١٥')).toHaveStyle({
+        fontSize: 19,
+        fontWeight: '900',
+        color: lightTheme.onPrimary,
+      });
+      expect(within(disabled).getByText('٣')).toHaveStyle({
+        color: '#000006',
+      });
+      expect(within(disabled).getByText('١٣')).toHaveStyle({
+        color: '#000006',
+      });
+    });
+
+    it('styles the container like the style prop, which wins', async () => {
+      await render(
+        <HilalCalendar
+          styles={{ container: { padding: 4, margin: 1 } }}
+          style={{ padding: 8 }}
+        />
+      );
+      const container = screen.getByTestId('hilal-header').parent;
+      expect(container).toHaveStyle({ padding: 8, margin: 1 });
+    });
+
+    it('styles picker items, but not with the day slots', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          styles={{
+            pickerItem: { minHeight: 61 },
+            pickerText: { fontSize: 12 },
+            selectedDay: { borderRadius: 2 },
+            selectedDayText: { color: '#000007' },
+            today: { borderColor: '#000005' },
+          }}
+        />
+      );
+      await fireEvent.press(
+        screen.getByRole('button', { name: /^اختر الشهر والسنة/ })
+      );
+      const ramadan = screen.getByRole('button', { name: 'رمضان ١٤٤٥' });
+      expect(ramadan).toHaveStyle({
+        minHeight: 61,
+        borderRadius: lightTheme.radius,
+        borderColor: lightTheme.primary,
+      });
+      expect(screen.getByText('رمضان')).toHaveStyle({
+        fontSize: 12,
+        color: lightTheme.onPrimary,
+      });
+    });
+
+    it('keeps the selected background over a day background', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          styles={{ day: { backgroundColor: '#000008' } }}
+        />
+      );
+      const plain = day(/^الثلاثاء، ١٦ رمضان/);
+      expect(plain).toHaveStyle({ backgroundColor: '#000008' });
+      expect(day(/^الاثنين، ١٥ رمضان/)).toHaveStyle({
+        backgroundColor: lightTheme.primary,
+      });
+    });
+  });
+
+  describe('labels', () => {
+    it('replaces the toggle and button texts', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          labels={{
+            hijri: 'هـ',
+            gregorian: 'م',
+            previousMonth: 'قبل',
+            nextMonth: undefined,
+            chooseMonth: 'افتح',
+            chooseYear: 'السنوات',
+            previousYear: 'سنة قبل',
+            nextYear: 'سنة بعد',
+          }}
+        />
+      );
+      expect(screen.getByText('هـ')).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'م' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'قبل' })).toBeOnTheScreen();
+      // Undefined keeps the default.
+      expect(
+        screen.getByRole('button', { name: 'الشهر التالي' })
+      ).toBeOnTheScreen();
+      await fireEvent.press(
+        screen.getByRole('button', { name: 'افتح، رمضان ١٤٤٥' })
+      );
+      expect(screen.getByRole('button', { name: 'سنة قبل' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'سنة بعد' })).toBeOnTheScreen();
+      await fireEvent.press(
+        screen.getByRole('button', { name: 'السنوات، ١٤٤٥' })
+      );
+      expect(
+        screen.getByRole('button', { name: 'السنوات السابقة' })
+      ).toBeOnTheScreen();
+    });
+
+    it('replaces the year page arrows', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          locale="en"
+          labels={{ previousYears: 'Earlier', nextYears: 'Later' }}
+        />
+      );
+      await fireEvent.press(
+        screen.getByRole('button', { name: /^Choose month and year/ })
+      );
+      await fireEvent.press(
+        screen.getByRole('button', { name: /^Choose year/ })
+      );
+      expect(screen.getByRole('button', { name: 'Earlier' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'Later' })).toBeOnTheScreen();
+    });
+  });
+
   it('accepts theme and style overrides', async () => {
     await render(
       <HilalCalendar
@@ -531,5 +746,55 @@ describe('HilalCalendar', () => {
       backgroundColor: '#7C3AED',
       borderRadius: 4,
     });
+  });
+
+  it('draws the arrows in theme.arrow, and disabled arrows in theme.disabled', async () => {
+    const strokes = (direction: 'left' | 'right') =>
+      screen.getByTestId(`hilal-chevron-${direction}`).children;
+    // 1 Ramadan is the earliest day, so the previous-month arrow is disabled.
+    await render(
+      <HilalCalendar
+        defaultValue={MARCH_25}
+        minDate={new Date(2024, 2, 11)}
+        theme={{ arrow: '#DC2626' }}
+      />
+    );
+    // Arabic: the next month is on the left.
+    for (const stroke of strokes('left')) {
+      expect(stroke).toHaveStyle({ backgroundColor: '#DC2626' });
+    }
+    for (const stroke of strokes('right')) {
+      expect(stroke).toHaveStyle({ backgroundColor: lightTheme.disabled });
+    }
+  });
+
+  it('draws the arrows in the text color by default', async () => {
+    await render(<HilalCalendar defaultValue={MARCH_25} />);
+    for (const stroke of screen.getByTestId('hilal-chevron-left').children) {
+      expect(stroke).toHaveStyle({ backgroundColor: lightTheme.text });
+    }
+  });
+
+  it('renders text in the theme fonts', async () => {
+    await render(
+      <HilalCalendar
+        defaultValue={MARCH_25}
+        theme={{
+          fontFamily: 'Cairo-Regular',
+          fontFamilyBold: 'Cairo-Bold',
+          fontScale: 1.25,
+        }}
+      />
+    );
+    expect(screen.getByText('رمضان ١٤٤٥')).toHaveStyle({
+      fontFamily: 'Cairo-Bold',
+      fontSize: 22.5,
+      fontWeight: 'normal',
+    });
+    expect(screen.getByText('مارس – أبريل ٢٠٢٤')).toHaveStyle({
+      fontFamily: 'Cairo-Regular',
+      fontSize: 16.3,
+    });
+    expect(day(/^الاثنين، ١٥ رمضان/)).toHaveStyle({ height: 60 });
   });
 });
