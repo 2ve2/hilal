@@ -57,6 +57,28 @@ export type HilalStyles = {
   pickerText?: TextSlot;
 };
 
+/**
+ * Texts of the calendar's buttons, read by screen readers too. Each is
+ * optional; the rest come from the locale.
+ */
+export type HilalLabels = {
+  /** The toggle's Hijri option. */
+  hijri?: string;
+  /** The toggle's Gregorian option. */
+  gregorian?: string;
+  /** Arrows, read by screen readers. */
+  previousMonth?: string;
+  nextMonth?: string;
+  previousYear?: string;
+  nextYear?: string;
+  previousYears?: string;
+  nextYears?: string;
+  /** The month title button, read by screen readers before the title. */
+  chooseMonth?: string;
+  /** The year title button in the month picker. */
+  chooseYear?: string;
+};
+
 export type HilalCalendarProps = {
   /** Selected day (controlled). Only the local calendar day is used. */
   value?: Date;
@@ -116,6 +138,8 @@ export type HilalCalendarProps = {
    * or a partial theme merged over the 'auto' theme.
    */
   theme?: ThemeProp;
+  /** Texts of the toggle and buttons, see `HilalLabels`. */
+  labels?: HilalLabels;
   /** Styles for parts of the calendar, see `HilalStyles`. */
   styles?: HilalStyles;
   /** Style of the outer container. */

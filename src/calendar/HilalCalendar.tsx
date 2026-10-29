@@ -50,29 +50,14 @@ import {
 import { PickerGrid, type PickerGridItem } from './PickerGrid';
 import { createStyles, withSlots } from './styles';
 import { resolveTheme } from './theme';
-import type { HilalCalendarProps, SelectedDate } from './types';
+import type { HilalCalendarProps, HilalLabels, SelectedDate } from './types';
 
-const LABELS: Record<
-  Locale,
-  {
-    hijri: string;
-    gregorian: string;
-    previous: string;
-    next: string;
-    previousYear: string;
-    nextYear: string;
-    previousYears: string;
-    nextYears: string;
-    chooseMonth: string;
-    chooseYear: string;
-    separator: string;
-  }
-> = {
+const LABELS: Record<Locale, Required<HilalLabels> & { separator: string }> = {
   ar: {
     hijri: 'هجري',
     gregorian: 'ميلادي',
-    previous: 'الشهر السابق',
-    next: 'الشهر التالي',
+    previousMonth: 'الشهر السابق',
+    nextMonth: 'الشهر التالي',
     previousYear: 'السنة السابقة',
     nextYear: 'السنة التالية',
     previousYears: 'السنوات السابقة',
@@ -84,8 +69,8 @@ const LABELS: Record<
   en: {
     hijri: 'Hijri',
     gregorian: 'Gregorian',
-    previous: 'Previous month',
-    next: 'Next month',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
     previousYear: 'Previous year',
     nextYear: 'Next year',
     previousYears: 'Previous years',
@@ -171,12 +156,28 @@ export function HilalCalendar({
   weekdayFormat = 'short',
   theme: themeProp = 'auto',
   styles: stylesProp,
+  labels: labelsProp,
   style,
   dayStyle,
 }: HilalCalendarProps) {
   const adjustment = checkAdjustment(hijriAdjustment, 'HilalCalendar');
   const digits = digitsProp ?? defaultDigits(locale);
-  const labels = LABELS[locale];
+  // Compared by value, so an inline object doesn't recompute every day.
+  const labelsKey = JSON.stringify(labelsProp);
+  const labels = useMemo(
+    () => {
+      const merged = { ...LABELS[locale] };
+      for (const [key, text] of Object.entries(labelsProp ?? {})) {
+        // A label left undefined keeps the default.
+        if (text !== undefined) {
+          merged[key as keyof HilalLabels] = text;
+        }
+      }
+      return merged;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locale, labelsKey]
+  );
   // React Native Web leaves I18nManager.isRTL undefined, not false.
   const appRTL = I18nManager.isRTL === true;
   const rtl =
@@ -402,12 +403,12 @@ export function HilalCalendar({
     arrows = {
       previous: {
         enabled: monthOverlaps(previous, range, adjustment),
-        label: labels.previous,
+        label: labels.previousMonth,
         onPress: () => setMonth(previous),
       },
       next: {
         enabled: monthOverlaps(next, range, adjustment),
-        label: labels.next,
+        label: labels.nextMonth,
         onPress: () => setMonth(next),
       },
     };

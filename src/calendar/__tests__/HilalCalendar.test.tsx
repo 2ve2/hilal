@@ -678,6 +678,62 @@ describe('HilalCalendar', () => {
     });
   });
 
+  describe('labels', () => {
+    it('replaces the toggle and button texts', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          labels={{
+            hijri: 'هـ',
+            gregorian: 'م',
+            previousMonth: 'قبل',
+            nextMonth: undefined,
+            chooseMonth: 'افتح',
+            chooseYear: 'السنوات',
+            previousYear: 'سنة قبل',
+            nextYear: 'سنة بعد',
+          }}
+        />
+      );
+      expect(screen.getByText('هـ')).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'م' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'قبل' })).toBeOnTheScreen();
+      // Undefined keeps the default.
+      expect(
+        screen.getByRole('button', { name: 'الشهر التالي' })
+      ).toBeOnTheScreen();
+      await fireEvent.press(
+        screen.getByRole('button', { name: 'افتح، رمضان ١٤٤٥' })
+      );
+      expect(screen.getByRole('button', { name: 'سنة قبل' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'سنة بعد' })).toBeOnTheScreen();
+      await fireEvent.press(
+        screen.getByRole('button', { name: 'السنوات، ١٤٤٥' })
+      );
+      expect(
+        screen.getByRole('button', { name: 'السنوات السابقة' })
+      ).toBeOnTheScreen();
+    });
+
+    it('replaces the year page arrows', async () => {
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          locale="en"
+          labels={{ previousYears: 'Earlier', nextYears: 'Later' }}
+        />
+      );
+      await fireEvent.press(
+        screen.getByRole('button', { name: /^Choose month and year/ })
+      );
+      await fireEvent.press(
+        screen.getByRole('button', { name: /^Choose year/ })
+      );
+      expect(screen.getByRole('button', { name: 'Earlier' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'Later' })).toBeOnTheScreen();
+    });
+  });
+
   it('accepts theme and style overrides', async () => {
     await render(
       <HilalCalendar
