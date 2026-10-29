@@ -49,12 +49,16 @@ const in30Days = addDays(today, 30);
 
 const isFriday = ({ gregorian }: SelectedDate) => gregorian.getDay() === 5;
 
-const sand = {
-  background: '#FFF8EC',
-  primary: '#B45309',
-  today: '#B45309',
-  border: '#F1DFC0',
-  radius: 24,
+const violet = {
+  background: '#F7F5FF',
+  text: '#1E1B4B',
+  textSecondary: '#6B6A8A',
+  primary: '#6D28D9',
+  onPrimary: '#FFFFFF',
+  today: '#A78BFA',
+  border: '#E4DEFC',
+  arrow: '#6D28D9',
+  radius: 14,
 };
 
 const teal = { arrow: '#0F766E', primary: '#0F766E', fontScale: 1.1 };
@@ -146,18 +150,18 @@ export const DEMOS: Demo[] = [
     id: 'custom',
     title: () => 'Custom colors',
     description: () =>
-      'A partial theme is merged over the default, here with round days.',
+      'A partial theme is merged over the default: violet colors and arrows.',
     code: (locale) =>
       jsx(locale, [
         `theme={{
-  background: '${sand.background}',
-  primary: '${sand.primary}',
-  today: '${sand.today}',
-  border: '${sand.border}',
-  radius: ${sand.radius},
+${Object.entries(violet)
+  .map(
+    ([key, value]) => `  ${key}: ${JSON.stringify(value).replace(/"/g, "'")},`
+  )
+  .join('\n')}
 }}`,
       ]),
-    Component: ({ locale }) => <HilalCalendar locale={locale} theme={sand} />,
+    Component: ({ locale }) => <HilalCalendar locale={locale} theme={violet} />,
   },
   {
     id: 'customized',
