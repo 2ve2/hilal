@@ -48,7 +48,7 @@ import {
   type DayRange,
 } from './month';
 import { PickerGrid, type PickerGridItem } from './PickerGrid';
-import { createStyles } from './styles';
+import { createStyles, withSlots } from './styles';
 import { resolveTheme } from './theme';
 import type { HilalCalendarProps, SelectedDate } from './types';
 
@@ -170,6 +170,7 @@ export function HilalCalendar({
   showMonthYearPicker = true,
   weekdayFormat = 'short',
   theme: themeProp = 'auto',
+  styles: stylesProp,
   style,
   dayStyle,
 }: HilalCalendarProps) {
@@ -193,7 +194,13 @@ export function HilalCalendar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [themeKey, colorScheme]
   );
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  // An inline `styles` prop is compared by value too.
+  const stylesKey = JSON.stringify(stylesProp);
+  const { styles, dayStyles } = useMemo(
+    () => withSlots(createStyles(theme), stylesProp),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [theme, stylesKey]
+  );
   // Same for an inline dayStyle: a new object every render would re-render
   // every day cell.
   const dayStyleKey = JSON.stringify(dayStyle);
@@ -620,7 +627,7 @@ export function HilalCalendar({
                     {...cell}
                     selected={cell.epochDay === selectedDay}
                     today={cell.epochDay === today}
-                    styles={styles}
+                    styles={dayStyles}
                     dayStyle={stableDayStyle}
                     onSelect={onSelect}
                   />

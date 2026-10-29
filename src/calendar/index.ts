@@ -5,4 +5,4 @@ export {
   type HilalTheme,
   type ThemeProp,
 } from './theme';
-export type { HilalCalendarProps, SelectedDate } from './types';
+export type { HilalCalendarProps, HilalStyles, SelectedDate } from './types';

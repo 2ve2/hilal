@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 import type { HilalTheme } from './theme';
+import type { HilalStyles } from './types';
 
 /** Fills the parent; left/right are both 0, so RTL mirroring can't move it. */
 const fill = {
@@ -95,6 +96,64 @@ function applyFonts<T extends Record<string, object>>(
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
+
+/** The calendar style each `styles` slot is merged into. */
+const SLOTS = {
+  container: 'container',
+  toggle: 'toggle',
+  toggleOption: 'toggleOption',
+  toggleText: 'toggleText',
+  header: 'header',
+  title: 'title',
+  subtitle: 'subtitle',
+  arrow: 'arrow',
+  weekdayText: 'weekday',
+  day: 'day',
+  dayText: 'dayText',
+  secondaryDayText: 'secondaryText',
+  pickerItem: 'pickerItem',
+  pickerText: 'pickerText',
+} as const;
+
+/**
+ * The slots for day states. The picker shares these calendar styles, so
+ * they are merged into a copy used only by the day cells.
+ */
+const DAY_SLOTS = {
+  selectedDay: 'selected',
+  selectedDayText: 'selectedText',
+  today: 'today',
+  disabledDayText: 'disabledText',
+} as const;
+
+/**
+ * Merges the `styles` prop over the calendar styles: `styles` for the
+ * calendar and the picker, `dayStyles` for the day cells. Slots that are
+ * not set leave the calendar styles as they are.
+ */
+export function withSlots(
+  styles: CalendarStyles,
+  slots: HilalStyles | undefined
+): { styles: CalendarStyles; dayStyles: CalendarStyles } {
+  if (!slots) {
+    return { styles, dayStyles: styles };
+  }
+  const merge = (
+    target: CalendarStyles,
+    map: Record<string, keyof CalendarStyles>
+  ) => {
+    const out: Record<string, unknown> = { ...target };
+    for (const [slot, key] of Object.entries(map)) {
+      const style = slots[slot as keyof HilalStyles];
+      if (style) {
+        out[key] = StyleSheet.flatten([target[key], style]);
+      }
+    }
+    return out as CalendarStyles;
+  };
+  const merged = merge(styles, SLOTS);
+  return { styles: merged, dayStyles: merge(merged, DAY_SLOTS) };
+}
 
 function baseStyles(theme: HilalTheme) {
   return {

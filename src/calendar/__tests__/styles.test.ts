@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { createStyles } from '../styles';
+import { createStyles, withSlots } from '../styles';
 import { lightTheme } from '../theme';
 
 const base = createStyles(lightTheme);
@@ -80,5 +80,27 @@ describe('createStyles fonts', () => {
         RangeError
       );
     }
+  });
+});
+
+describe('withSlots', () => {
+  it('returns the calendar styles themselves without slots', () => {
+    expect(withSlots(base, undefined)).toEqual({
+      styles: base,
+      dayStyles: base,
+    });
+    expect(withSlots(base, undefined).styles).toBe(base);
+  });
+
+  it('merges day-state slots only into the day styles', () => {
+    const { styles, dayStyles } = withSlots(base, {
+      title: { color: 'red' },
+      selectedDay: { borderRadius: 2 },
+    });
+    expect(styles.title).toEqual({ ...base.title, color: 'red' });
+    expect(dayStyles.title).toEqual(styles.title);
+    expect(styles.selected).toBe(base.selected);
+    expect(dayStyles.selected).toEqual({ ...base.selected, borderRadius: 2 });
+    expect(styles.day).toBe(base.day);
   });
 });

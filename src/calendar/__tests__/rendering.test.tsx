@@ -53,6 +53,7 @@ describe('day cell rendering', () => {
           onChange={(d) => setValue(d.gregorian)}
           isDateDisabled={(d) => d.gregorian.getDay() === 5}
           dayStyle={{ borderRadius: 8 }}
+          styles={{ dayText: { fontSize: 17 } }}
           theme={{ primary: '#7C3AED' }}
         />
       );

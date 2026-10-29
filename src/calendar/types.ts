@@ -1,4 +1,4 @@
-import type { StyleProp, ViewStyle } from 'react-native';
+import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 
 import type { CalendarType, Digits, Locale } from '../core/locale';
 import type { HijriDate } from '../core/types';
@@ -11,6 +11,50 @@ export type SelectedDate = {
   hijri: HijriDate;
   /** Both dates as text in the calendar's locale and digits. */
   formatted: { gregorian: string; hijri: string };
+};
+
+type ViewSlot = StyleProp<ViewStyle>;
+type TextSlot = StyleProp<TextStyle>;
+
+/**
+ * Styles for parts of the calendar, merged over the theme's styles. Each
+ * is optional.
+ */
+export type HilalStyles = {
+  /** The outer container (the same as the `style` prop). */
+  container?: ViewSlot;
+  /** The Hijri / Gregorian toggle. */
+  toggle?: ViewSlot;
+  /** Each option of the toggle. */
+  toggleOption?: ViewSlot;
+  toggleText?: TextSlot;
+  /** The row of arrows and titles. */
+  header?: ViewSlot;
+  /** The month title. */
+  title?: TextSlot;
+  /** The other calendar's months under the title. */
+  subtitle?: TextSlot;
+  /** Each arrow button. */
+  arrow?: ViewSlot;
+  /** Each weekday name. */
+  weekdayText?: TextSlot;
+  /** Each day cell (the pressable circle). */
+  day?: ViewSlot;
+  /** The day number. */
+  dayText?: TextSlot;
+  /** The other calendar's day under the day number. */
+  secondaryDayText?: TextSlot;
+  /** The selected day cell. */
+  selectedDay?: ViewSlot;
+  /** The selected day's number. */
+  selectedDayText?: TextSlot;
+  /** Today's day cell. */
+  today?: ViewSlot;
+  /** Both texts of a disabled day. */
+  disabledDayText?: TextSlot;
+  /** Each month or year in the month and year picker. */
+  pickerItem?: ViewSlot;
+  pickerText?: TextSlot;
 };
 
 export type HilalCalendarProps = {
@@ -72,8 +116,13 @@ export type HilalCalendarProps = {
    * or a partial theme merged over the 'auto' theme.
    */
   theme?: ThemeProp;
+  /** Styles for parts of the calendar, see `HilalStyles`. */
+  styles?: HilalStyles;
   /** Style of the outer container. */
   style?: StyleProp<ViewStyle>;
-  /** Style of every day cell (the pressable circle). */
+  /**
+   * Style of every day cell (the pressable circle). Unlike `styles.day`,
+   * it also wins over the selected and today styles.
+   */
   dayStyle?: StyleProp<ViewStyle>;
 };
