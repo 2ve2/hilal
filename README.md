@@ -26,7 +26,7 @@ iOS, Android, web and Expo Go. Zero dependencies. Arabic-first.
 - **Cross-platform**: pure TypeScript and React Native core components. The same code runs on iOS, Android, the web and in Expo Go, with no native modules.
 - **Zero runtime dependencies**: no moment, no dayjs, no `Intl` calendars at runtime.
 - **Customizable**: light, dark, follow the system, or your own colors and fonts; styles for every part and your own button texts.
-- **Accessible**: every day is a button with a full spoken date and its selected and disabled state.
+- **Accessible**: every day is a button with a full spoken date, its selected and disabled state, and "today". Text follows the phone's text size within limits that keep the layout intact, and animations respect reduce motion.
 - **The engine is public**: convert and format Hijri dates without using the UI.
 
 ## Installation
@@ -40,6 +40,8 @@ npx expo install react-native-hilal
 ```
 
 `react` and `react-native` are the only peer dependencies. There is nothing to link and no native build step.
+
+Hilal is designed for phones first. On the web (React Native Web) it works the same, but text is drawn with the browser's fonts, so it can look slightly different.
 
 ## Quick start
 
@@ -234,6 +236,8 @@ Without options, `formatHijri` returns ١ رمضان ١٤٤٦ هـ (Arabic, Arab
 
 `HijriDate` is `{ year: number; month: number; day: number }` with `month` from 1 to 12. Dates outside the supported range (1937-03-14 to 2077-11-16) throw a `RangeError`.
 
+All types are exported too: `HilalCalendarProps`, `SelectedDate`, `HilalTheme`, `ThemeProp`, `HilalStyles`, `HilalLabels`, `HijriDate`, `HijriConversionOptions`, `FormatHijriOptions`, `CalendarType`, `Locale`, `Digits` and `WeekdayFormat`.
+
 Dates are always handled as **local calendar days**. A day is never derived from a UTC timestamp, so the result doesn't depend on the time of day or the time zone offset.
 
 ## Why Hilal?
@@ -281,7 +285,7 @@ Gregorian dates never change. The shift moves the whole calendar, so months keep
 
 ## Roadmap
 
-Ideas for v2:
+Planned next:
 
 - Range selection
 - Event dots on days
@@ -290,7 +294,7 @@ Ideas for v2:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, commit conventions and how to send a pull request.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, commit conventions and how to send a pull request. To report a security issue, see [SECURITY.md](SECURITY.md).
 
 ## License
 
