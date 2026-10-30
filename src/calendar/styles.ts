@@ -132,6 +132,7 @@ const DAY_SLOTS = {
   selectedDayText: 'selectedText',
   today: 'today',
   disabledDayText: 'disabledText',
+  todayDayText: 'todayText',
 } as const;
 
 /**

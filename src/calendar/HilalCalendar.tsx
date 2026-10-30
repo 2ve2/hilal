@@ -175,6 +175,7 @@ export function HilalCalendar({
   labels: labelsProp,
   style,
   dayStyle,
+  maxFontSizeMultiplier,
 }: HilalCalendarProps) {
   const adjustment = checkAdjustment(hijriAdjustment, 'HilalCalendar');
   const digits = digitsProp ?? defaultDigits(locale);
@@ -194,6 +195,8 @@ export function HilalCalendar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [locale, labelsKey]
   );
+  const cellFontScale = maxFontSizeMultiplier ?? MAX_CELL_FONT_SCALE;
+  const headerFontScale = maxFontSizeMultiplier ?? MAX_HEADER_FONT_SCALE;
   // Today, this month and this year are only marked by a ring; screen
   // readers hear it at the end of the label instead.
   const withCurrent = (label: string, current: boolean, text: string) =>
@@ -521,7 +524,7 @@ export function HilalCalendar({
   const titleText = (
     <Text
       accessibilityRole="header"
-      maxFontSizeMultiplier={MAX_HEADER_FONT_SCALE}
+      maxFontSizeMultiplier={headerFontScale}
       style={titleAction ? [styles.title, styles.titleInButton] : styles.title}
     >
       {title}
@@ -595,7 +598,7 @@ export function HilalCalendar({
                 ]}
               >
                 <Text
-                  maxFontSizeMultiplier={MAX_HEADER_FONT_SCALE}
+                  maxFontSizeMultiplier={headerFontScale}
                   style={[styles.toggleText, active && styles.toggleTextActive]}
                 >
                   {labels[option]}
@@ -635,10 +638,7 @@ export function HilalCalendar({
           ) : (
             titleText
           )}
-          <Text
-            maxFontSizeMultiplier={MAX_HEADER_FONT_SCALE}
-            style={styles.subtitle}
-          >
+          <Text maxFontSizeMultiplier={headerFontScale} style={styles.subtitle}>
             {subtitle}
           </Text>
         </View>
@@ -656,6 +656,7 @@ export function HilalCalendar({
             styles={styles}
             row={row}
             fill={daysHeight !== undefined}
+            maxFontScale={cellFontScale}
             onSelect={pick}
           />
         </Appear>
@@ -674,7 +675,7 @@ export function HilalCalendar({
                 // large.
                 numberOfLines={1}
                 adjustsFontSizeToFit
-                maxFontSizeMultiplier={MAX_CELL_FONT_SCALE}
+                maxFontSizeMultiplier={cellFontScale}
                 style={styles.weekday}
               >
                 {name}
@@ -700,6 +701,7 @@ export function HilalCalendar({
                     today={cell.epochDay === today}
                     styles={dayStyles}
                     dayStyle={stableDayStyle}
+                    maxFontScale={cellFontScale}
                     onSelect={onSelect}
                   />
                 )

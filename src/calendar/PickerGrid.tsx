@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { MAX_CELL_FONT_SCALE, type CalendarStyles } from './styles';
+import type { CalendarStyles } from './styles';
 
 export type PickerGridItem = {
   key: number;
@@ -19,6 +19,8 @@ type PickerGridProps = {
   row: 'row' | 'row-reverse';
   /** Grow the rows to fill the parent's height. */
   fill: boolean;
+  /** maxFontSizeMultiplier of the texts. */
+  maxFontScale: number;
   onSelect: (key: number) => void;
 };
 
@@ -41,6 +43,7 @@ export function PickerGrid({
   styles,
   row,
   fill,
+  maxFontScale,
   onSelect,
 }: PickerGridProps) {
   const rows: PickerGridItem[][] = [];
@@ -77,7 +80,7 @@ export function PickerGrid({
                   numberOfLines={2}
                   adjustsFontSizeToFit
                   minimumFontScale={0.8}
-                  maxFontSizeMultiplier={MAX_CELL_FONT_SCALE}
+                  maxFontSizeMultiplier={maxFontScale}
                   style={[
                     styles.pickerText,
                     item.disabled && styles.disabledText,

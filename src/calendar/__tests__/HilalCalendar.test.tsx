@@ -891,6 +891,43 @@ describe('HilalCalendar', () => {
     ).toHaveProp('hitSlop', { top: 8, bottom: 10, left: 6, right: 6 });
   });
 
+  it('applies maxFontSizeMultiplier to all text', async () => {
+    await render(
+      <HilalCalendar defaultValue={MARCH_25} maxFontSizeMultiplier={1} />
+    );
+    const cell = day(/^الاثنين، ١٥ رمضان/);
+    for (const text of [
+      within(cell).getByText('١٥'),
+      within(cell).getByText('٢٥'),
+      screen.getByText('أحد'),
+      screen.getByText('رمضان ١٤٤٥'),
+      screen.getByText('هجري'),
+    ]) {
+      expect(text).toHaveProp('maxFontSizeMultiplier', 1);
+    }
+    await fireEvent.press(
+      screen.getByRole('button', { name: /^اختر الشهر والسنة/ })
+    );
+    expect(screen.getByText('شوال')).toHaveProp('maxFontSizeMultiplier', 1);
+  });
+
+  it('styles the number of today', async () => {
+    await render(
+      <HilalCalendar
+        defaultValue={MARCH_25}
+        styles={{ todayDayText: { fontWeight: '400', color: '#000009' } }}
+      />
+    );
+    // 20 March is today; the selected day keeps its bold text.
+    expect(within(day(/^الأربعاء، ١٠ رمضان/)).getByText('١٠')).toHaveStyle({
+      fontWeight: '400',
+      color: '#000009',
+    });
+    expect(within(day(/^الاثنين، ١٥ رمضان/)).getByText('١٥')).toHaveStyle({
+      fontWeight: '700',
+    });
+  });
+
   it('accepts theme and style overrides', async () => {
     await render(
       <HilalCalendar
