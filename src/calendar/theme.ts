@@ -26,8 +26,8 @@ export type HilalTheme = {
    */
   fontFamily?: string;
   /**
-   * Font of the bold text (month title, day numbers, toggle, weekdays,
-   * picker), for example 'Cairo-Bold'. When set, it is used as is,
+   * Font of the bold text (month title, selected day and today, toggle,
+   * weekdays, picker), for example 'Cairo-Bold'. When set, it is used as is,
    * without a fontWeight on top. Default: `fontFamily` with a bold weight.
    */
   fontFamilyBold?: string;
@@ -49,7 +49,7 @@ export const lightTheme: HilalTheme = {
   primary: '#0F766E',
   onPrimary: '#FFFFFF',
   today: '#0F766E',
-  disabled: '#C5CAD1',
+  disabled: '#9EA5AF',
   border: '#E3E6EA',
   radius: 12,
 };
@@ -61,7 +61,7 @@ export const darkTheme: HilalTheme = {
   primary: '#2DD4BF',
   onPrimary: '#042F2C',
   today: '#2DD4BF',
-  disabled: '#4A525C',
+  disabled: '#56606B',
   border: '#2A3038',
   radius: 12,
 };

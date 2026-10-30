@@ -14,6 +14,15 @@ const fill = {
 
 export type CalendarStyles = ReturnType<typeof createStyles>;
 
+/**
+ * How far the phone's text size setting may grow the text of day cells,
+ * weekday names and picker buttons, which have a fixed size: up to 1.3 a
+ * day number and the date under it still fit a 48 pt cell.
+ */
+export const MAX_CELL_FONT_SCALE = 1.3;
+/** The same for the header and the toggle, which have room to grow. */
+export const MAX_HEADER_FONT_SCALE = 2;
+
 /** The text styles, which take the theme's fonts and font scale. */
 const TEXT_STYLES = [
   'toggleText',
@@ -23,6 +32,9 @@ const TEXT_STYLES = [
   'dayText',
   'secondaryText',
   'pickerText',
+  // Only a weight, for the bold font.
+  'selectedText',
+  'todayText',
 ] as const;
 
 /** Text in columns of a fixed width: shrinks with the font scale only. */
@@ -120,6 +132,7 @@ const DAY_SLOTS = {
   selectedDayText: 'selectedText',
   today: 'today',
   disabledDayText: 'disabledText',
+  todayDayText: 'todayText',
 } as const;
 
 /**
@@ -211,7 +224,7 @@ function baseStyles(theme: HilalTheme) {
       backgroundColor: theme.border,
     },
     weekdays: {
-      marginBottom: 4,
+      marginBottom: 8,
     },
     weekday: {
       color: theme.textSecondary,
@@ -250,18 +263,27 @@ function baseStyles(theme: HilalTheme) {
     pressed: {
       backgroundColor: theme.border,
     },
+    // Medium, so the selected day and today stand out in bold. Fixed line
+    // heights: fonts with tall lines (Noto Naskh, many custom fonts) would
+    // otherwise push the date under the number to the next row.
     dayText: {
       color: theme.text,
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: '500',
+      lineHeight: 20,
     },
     secondaryText: {
       color: theme.textSecondary,
-      fontSize: 10,
+      fontSize: 11,
+      lineHeight: 14,
       marginTop: 1,
     },
     selectedText: {
       color: theme.onPrimary,
+      fontWeight: '700',
+    },
+    todayText: {
+      fontWeight: '700',
     },
     selectedSecondaryText: {
       color: theme.onPrimary,

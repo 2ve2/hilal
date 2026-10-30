@@ -49,7 +49,12 @@ import {
   type DayRange,
 } from './month';
 import { PickerGrid, type PickerGridItem } from './PickerGrid';
-import { createStyles, withSlots } from './styles';
+import {
+  createStyles,
+  MAX_CELL_FONT_SCALE,
+  MAX_HEADER_FONT_SCALE,
+  withSlots,
+} from './styles';
 import { resolveTheme } from './theme';
 import type { HilalCalendarProps, HilalLabels, SelectedDate } from './types';
 
@@ -57,6 +62,9 @@ const LABELS: Record<Locale, Required<HilalLabels> & { separator: string }> = {
   ar: {
     hijri: 'هجري',
     gregorian: 'ميلادي',
+    today: 'اليوم',
+    thisMonth: 'هذا الشهر',
+    thisYear: 'هذه السنة',
     previousMonth: 'الشهر السابق',
     nextMonth: 'الشهر التالي',
     previousYear: 'السنة السابقة',
@@ -70,6 +78,9 @@ const LABELS: Record<Locale, Required<HilalLabels> & { separator: string }> = {
   en: {
     hijri: 'Hijri',
     gregorian: 'Gregorian',
+    today: 'Today',
+    thisMonth: 'This month',
+    thisYear: 'This year',
     previousMonth: 'Previous month',
     nextMonth: 'Next month',
     previousYear: 'Previous year',
@@ -81,6 +92,10 @@ const LABELS: Record<Locale, Required<HilalLabels> & { separator: string }> = {
     separator: ', ',
   },
 };
+
+// More below than above, so it never meets the toggle's.
+const TITLE_HIT_SLOP = { top: 8, bottom: 10, left: 6, right: 6 };
+const TOGGLE_HIT_SLOP = { top: 8, bottom: 8 };
 
 /** What the grid shows: the days of a month, or the month or year picker. */
 type View_ = 'days' | 'months' | 'years';
@@ -160,6 +175,7 @@ export function HilalCalendar({
   labels: labelsProp,
   style,
   dayStyle,
+  maxFontSizeMultiplier,
 }: HilalCalendarProps) {
   const adjustment = checkAdjustment(hijriAdjustment, 'HilalCalendar');
   const digits = digitsProp ?? defaultDigits(locale);
@@ -179,6 +195,12 @@ export function HilalCalendar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [locale, labelsKey]
   );
+  const cellFontScale = maxFontSizeMultiplier ?? MAX_CELL_FONT_SCALE;
+  const headerFontScale = maxFontSizeMultiplier ?? MAX_HEADER_FONT_SCALE;
+  // Today, this month and this year are only marked by a ring; screen
+  // readers hear it at the end of the label instead.
+  const withCurrent = (label: string, current: boolean, text: string) =>
+    current ? `${label}${labels.separator}${text}` : label;
   // React Native Web leaves I18nManager.isRTL undefined, not false.
   const appRTL = I18nManager.isRTL === true;
   const rtl =
@@ -502,6 +524,7 @@ export function HilalCalendar({
   const titleText = (
     <Text
       accessibilityRole="header"
+      maxFontSizeMultiplier={headerFontScale}
       style={titleAction ? [styles.title, styles.titleInButton] : styles.title}
     >
       {title}
@@ -512,26 +535,36 @@ export function HilalCalendar({
   if (mode === 'months') {
     const names = getMonthNames(calendar, locale);
     pickerItems = monthsOfYear(calendar, pickerYear, range, adjustment).map(
-      ({ value: m, disabled }) => ({
-        key: m,
-        label: names[m - 1]!,
-        accessibilityLabel: `${names[m - 1]} ${year(pickerYear)}`,
-        selected: pickerYear === shown.year && m === shown.month,
-        current:
-          todayInCalendar?.year === pickerYear && todayInCalendar.month === m,
-        disabled,
-      })
+      ({ value: m, disabled }) => {
+        const current =
+          todayInCalendar?.year === pickerYear && todayInCalendar.month === m;
+        return {
+          key: m,
+          label: names[m - 1]!,
+          accessibilityLabel: withCurrent(
+            `${names[m - 1]} ${year(pickerYear)}`,
+            current,
+            labels.thisMonth
+          ),
+          selected: pickerYear === shown.year && m === shown.month,
+          current,
+          disabled,
+        };
+      }
     );
   } else if (mode === 'years') {
     pickerItems = yearsOnPage(calendar, pageStart, range, adjustment).map(
-      ({ value: y, disabled }) => ({
-        key: y,
-        label: year(y),
-        accessibilityLabel: year(y),
-        selected: y === pickerYear,
-        current: todayInCalendar?.year === y,
-        disabled,
-      })
+      ({ value: y, disabled }) => {
+        const current = todayInCalendar?.year === y;
+        return {
+          key: y,
+          label: year(y),
+          accessibilityLabel: withCurrent(year(y), current, labels.thisYear),
+          selected: y === pickerYear,
+          current,
+          disabled,
+        };
+      }
     );
   }
 
@@ -554,6 +587,8 @@ export function HilalCalendar({
             return (
               <Pressable
                 key={option}
+                // 45 pt tall to the finger; the toggle itself stays slim.
+                hitSlop={TOGGLE_HIT_SLOP}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 onPress={() => toggleCalendar(option)}
@@ -563,6 +598,7 @@ export function HilalCalendar({
                 ]}
               >
                 <Text
+                  maxFontSizeMultiplier={headerFontScale}
                   style={[styles.toggleText, active && styles.toggleTextActive]}
                 >
                   {labels[option]}
@@ -583,7 +619,8 @@ export function HilalCalendar({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${titleAction.label}${labels.separator}${title}`}
-              hitSlop={6}
+              // 44 pt tall to the finger, like the arrows.
+              hitSlop={TITLE_HIT_SLOP}
               onPress={titleAction.onPress}
               style={({ pressed }) => [
                 styles.titleButton,
@@ -601,7 +638,9 @@ export function HilalCalendar({
           ) : (
             titleText
           )}
-          <Text style={styles.subtitle}>{subtitle}</Text>
+          <Text maxFontSizeMultiplier={headerFontScale} style={styles.subtitle}>
+            {subtitle}
+          </Text>
         </View>
         {renderArrow('next')}
       </View>
@@ -617,6 +656,7 @@ export function HilalCalendar({
             styles={styles}
             row={row}
             fill={daysHeight !== undefined}
+            maxFontScale={cellFontScale}
             onSelect={pick}
           />
         </Appear>
@@ -629,7 +669,15 @@ export function HilalCalendar({
           <View style={[styles.weekdays, { flexDirection: row }]}>
             {/* Keyed by position: narrow names repeat (S, T). */}
             {weekdays.map((name, i) => (
-              <Text key={i} style={styles.weekday}>
+              <Text
+                key={i}
+                // Shrinks back to fit its column when the phone's text is
+                // large.
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                maxFontSizeMultiplier={cellFontScale}
+                style={styles.weekday}
+              >
                 {name}
               </Text>
             ))}
@@ -644,10 +692,16 @@ export function HilalCalendar({
                   <DayCell
                     key={cell.epochDay}
                     {...cell}
+                    accessibilityLabel={withCurrent(
+                      cell.accessibilityLabel,
+                      cell.epochDay === today,
+                      labels.today
+                    )}
                     selected={cell.epochDay === selectedDay}
                     today={cell.epochDay === today}
                     styles={dayStyles}
                     dayStyle={stableDayStyle}
+                    maxFontScale={cellFontScale}
                     onSelect={onSelect}
                   />
                 )

@@ -50,6 +50,8 @@ export type HilalStyles = {
   selectedDayText?: TextSlot;
   /** Today's day cell. */
   today?: ViewSlot;
+  /** Today's day number, bold by default. */
+  todayDayText?: TextSlot;
   /** Both texts of a disabled day. */
   disabledDayText?: TextSlot;
   /** Each month or year in the month and year picker. */
@@ -66,6 +68,12 @@ export type HilalLabels = {
   hijri?: string;
   /** The toggle's Gregorian option. */
   gregorian?: string;
+  /** Read by screen readers after today's date. */
+  today?: string;
+  /** Read after the current month in the month picker. */
+  thisMonth?: string;
+  /** Read after the current year in the year picker. */
+  thisYear?: string;
   /** Arrows, read by screen readers. */
   previousMonth?: string;
   nextMonth?: string;
@@ -149,4 +157,12 @@ export type HilalCalendarProps = {
    * it also wins over the selected and today styles.
    */
   dayStyle?: StyleProp<ViewStyle>;
+  /**
+   * How far the phone's text size setting may grow the calendar's text,
+   * like React Native's prop of the same name: `1` turns it off, `0`
+   * removes the limit. By default, text in day cells, weekday names and
+   * picker buttons grows up to 1.3 times (as far as it fits a cell), and
+   * the header and toggle up to 2 times.
+   */
+  maxFontSizeMultiplier?: number;
 };
