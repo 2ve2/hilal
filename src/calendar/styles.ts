@@ -262,15 +262,19 @@ function baseStyles(theme: HilalTheme) {
     pressed: {
       backgroundColor: theme.border,
     },
-    // Medium, so the selected day and today stand out in bold.
+    // Medium, so the selected day and today stand out in bold. Fixed line
+    // heights: fonts with tall lines (Noto Naskh, many custom fonts) would
+    // otherwise push the date under the number to the next row.
     dayText: {
       color: theme.text,
       fontSize: 16,
       fontWeight: '500',
+      lineHeight: 20,
     },
     secondaryText: {
       color: theme.textSecondary,
       fontSize: 11,
+      lineHeight: 14,
       marginTop: 1,
     },
     selectedText: {
