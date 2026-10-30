@@ -197,7 +197,7 @@ The day states apply to day cells only, not to the month and year picker.
 <HilalCalendar labels={{ hijri: 'هـ', gregorian: 'م' }} />
 ```
 
-The keys are `hijri`, `gregorian`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`, `chooseMonth` and `chooseYear`.
+The keys are `hijri`, `gregorian`, `today`, `thisMonth`, `thisYear`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`, `chooseMonth` and `chooseYear`.
 
 ## Core API
 

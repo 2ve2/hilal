@@ -66,6 +66,12 @@ export type HilalLabels = {
   hijri?: string;
   /** The toggle's Gregorian option. */
   gregorian?: string;
+  /** Read by screen readers after today's date. */
+  today?: string;
+  /** Read after the current month in the month picker. */
+  thisMonth?: string;
+  /** Read after the current year in the year picker. */
+  thisYear?: string;
   /** Arrows, read by screen readers. */
   previousMonth?: string;
   nextMonth?: string;

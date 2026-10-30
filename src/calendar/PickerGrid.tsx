@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
-import type { CalendarStyles } from './styles';
+import { MAX_CELL_FONT_SCALE, type CalendarStyles } from './styles';
 
 export type PickerGridItem = {
   key: number;
@@ -77,6 +77,7 @@ export function PickerGrid({
                   numberOfLines={2}
                   adjustsFontSizeToFit
                   minimumFontScale={0.8}
+                  maxFontSizeMultiplier={MAX_CELL_FONT_SCALE}
                   style={[
                     styles.pickerText,
                     item.disabled && styles.disabledText,

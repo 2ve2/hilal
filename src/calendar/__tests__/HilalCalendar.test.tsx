@@ -363,10 +363,10 @@ describe('HilalCalendar', () => {
       expect(screen.getByText('٢٠٢٣ – ٢٠٢٤')).toBeOnTheScreen();
       expect(screen.queryByText('أحد')).toBeNull(); // no weekday row
       // The 12 months, not counting the "choose year" title button.
-      expect(button('رمضان ١٤٤٥')).toBeSelected();
+      expect(button('رمضان ١٤٤٥، هذا الشهر')).toBeSelected();
       expect(button('محرم ١٤٤٥')).toBeEnabled();
       expect(
-        screen.getAllByRole('button', { name: /^[^،]+ ١٤٤٥$/ })
+        screen.getAllByRole('button', { name: /^[^،]+ ١٤٤٥(، هذا الشهر)?$/ })
       ).toHaveLength(12);
     });
 
@@ -393,7 +393,7 @@ describe('HilalCalendar', () => {
       await openMonths();
       await fireEvent.press(button('اختر السنة، ١٤٤٥'));
       expect(header()).toHaveTextContent('١٤٤٠ – ١٤٥١');
-      expect(button('١٤٤٥')).toBeSelected();
+      expect(button('١٤٤٥، هذه السنة')).toBeSelected();
 
       await fireEvent.press(button('السنوات التالية'));
       expect(header()).toHaveTextContent('١٤٥٢ – ١٤٦٣');
@@ -408,7 +408,7 @@ describe('HilalCalendar', () => {
       await render(<HilalCalendar defaultValue={new Date(2024, 0, 20)} />);
       await openMonths();
       expect(button('رجب ١٤٤٥')).toBeSelected();
-      expect(button('رمضان ١٤٤٥')).toHaveStyle({
+      expect(button('رمضان ١٤٤٥، هذا الشهر')).toHaveStyle({
         borderColor: lightTheme.today,
       });
       expect(button('شوال ١٤٤٥')).not.toHaveStyle({
@@ -426,7 +426,7 @@ describe('HilalCalendar', () => {
       );
       await openMonths();
       // 20 March - 2 May 2024 touches Ramadan and Shawwal 1445 only.
-      expect(button('رمضان ١٤٤٥')).toBeEnabled();
+      expect(button('رمضان ١٤٤٥، هذا الشهر')).toBeEnabled();
       expect(button('شوال ١٤٤٥')).toBeEnabled();
       expect(button('شعبان ١٤٤٥')).toBeDisabled();
       expect(button('ذو القعدة ١٤٤٥')).toBeDisabled();
@@ -434,7 +434,7 @@ describe('HilalCalendar', () => {
       expect(button('السنة التالية')).toBeDisabled();
 
       await fireEvent.press(button('اختر السنة، ١٤٤٥'));
-      expect(button('١٤٤٥')).toBeEnabled();
+      expect(button('١٤٤٥، هذه السنة')).toBeEnabled();
       expect(button('١٤٤٤')).toBeDisabled();
       expect(button('السنوات السابقة')).toBeDisabled();
       expect(button('السنوات التالية')).toBeDisabled();
@@ -457,7 +457,7 @@ describe('HilalCalendar', () => {
       await fireEvent.press(button('اختر الشهر والسنة، مارس ٢٠٢٤'));
       expect(header()).toHaveTextContent('٢٠٢٤');
       expect(screen.getByText('١٤٤٥ – ١٤٤٦')).toBeOnTheScreen();
-      expect(button('مارس ٢٠٢٤')).toBeSelected();
+      expect(button('مارس ٢٠٢٤، هذا الشهر')).toBeSelected();
       await fireEvent.press(button('يوليو ٢٠٢٤'));
       expect(header()).toHaveTextContent('يوليو ٢٠٢٤');
     });
@@ -465,7 +465,7 @@ describe('HilalCalendar', () => {
     it('speaks English', async () => {
       await render(<HilalCalendar defaultValue={MARCH_25} locale="en" />);
       await fireEvent.press(button('Choose month and year, Ramadan 1445'));
-      expect(button('Ramadan 1445')).toBeSelected();
+      expect(button('Ramadan 1445, This month')).toBeSelected();
       await fireEvent.press(button('Choose year, 1445'));
       expect(header()).toHaveTextContent('1440 – 1451');
       expect(button('Next years')).toBeEnabled();
@@ -529,8 +529,8 @@ describe('HilalCalendar', () => {
     const flat = (element: { props: { style?: unknown } }) =>
       StyleSheet.flatten(element.props.style as object) ?? {};
     const pickerView = () =>
-      screen.getByRole('button', { name: 'رمضان ١٤٤٥' }).parent!.parent!.parent!
-        .parent!;
+      screen.getByRole('button', { name: 'رمضان ١٤٤٥، هذا الشهر' }).parent!
+        .parent!.parent!.parent!;
 
     it("doesn't animate the days when the calendar appears", async () => {
       await render(<HilalCalendar defaultValue={MARCH_25} />);
@@ -555,8 +555,8 @@ describe('HilalCalendar', () => {
       await fireEvent.press(
         screen.getByRole('button', { name: /^اختر السنة/ })
       );
-      const years = screen.getByRole('button', { name: '١٤٤٥' }).parent!.parent!
-        .parent!.parent!;
+      const years = screen.getByRole('button', { name: '١٤٤٥، هذه السنة' })
+        .parent!.parent!.parent!.parent!;
       // A new wrapper, so its fade starts over.
       expect(years).not.toBe(months);
       expect(years).toHaveStyle({ opacity: 0 });
@@ -579,7 +579,9 @@ describe('HilalCalendar', () => {
       await openMonths();
       expect(pickerView()).toHaveStyle({ minHeight: 312 });
       // The rows and buttons grow to fill it.
-      const ramadan = screen.getByRole('button', { name: 'رمضان ١٤٤٥' });
+      const ramadan = screen.getByRole('button', {
+        name: 'رمضان ١٤٤٥، هذا الشهر',
+      });
       expect(ramadan).toHaveStyle({ flexGrow: 1 });
       expect(ramadan.parent!.parent).toHaveStyle({ flexGrow: 1 });
     });
@@ -606,7 +608,9 @@ describe('HilalCalendar', () => {
     it('lays the picker out by its content before the days are measured', async () => {
       await render(<HilalCalendar defaultValue={MARCH_25} />);
       await openMonths();
-      const ramadan = screen.getByRole('button', { name: 'رمضان ١٤٤٥' });
+      const ramadan = screen.getByRole('button', {
+        name: 'رمضان ١٤٤٥، هذا الشهر',
+      });
       expect(flat(ramadan)).not.toHaveProperty('flexGrow');
     });
   });
@@ -743,7 +747,9 @@ describe('HilalCalendar', () => {
       await fireEvent.press(
         screen.getByRole('button', { name: /^اختر الشهر والسنة/ })
       );
-      const ramadan = screen.getByRole('button', { name: 'رمضان ١٤٤٥' });
+      const ramadan = screen.getByRole('button', {
+        name: 'رمضان ١٤٤٥، هذا الشهر',
+      });
       expect(ramadan).toHaveStyle({
         minHeight: 61,
         borderRadius: lightTheme.radius,
@@ -826,6 +832,40 @@ describe('HilalCalendar', () => {
     });
   });
 
+  it('says today, this month and this year to screen readers', async () => {
+    await render(<HilalCalendar defaultValue={MARCH_25} />);
+    // 20 March is today.
+    expect(day(/^الأربعاء، ١٠ رمضان ١٤٤٥ هـ، .*، اليوم$/)).toBeOnTheScreen();
+    expect(day(/^الاثنين، ١٥ رمضان/)).not.toHaveAccessibleName(/اليوم$/);
+    await fireEvent.press(
+      screen.getByRole('button', { name: /^اختر الشهر والسنة/ })
+    );
+    expect(screen.getByRole('button', { name: 'شوال ١٤٤٥' })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: /^اختر السنة/ }));
+    expect(screen.getByRole('button', { name: '١٤٤٦' })).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: '١٤٤٥، هذه السنة' })
+    ).toBeOnTheScreen();
+  });
+
+  it('limits how far the system text size grows fixed-size text', async () => {
+    await render(<HilalCalendar defaultValue={MARCH_25} />);
+    const cell = day(/^الاثنين، ١٥ رمضان/);
+    expect(within(cell).getByText('١٥')).toHaveProp(
+      'maxFontSizeMultiplier',
+      1.3
+    );
+    expect(within(cell).getByText('٢٥')).toHaveProp(
+      'maxFontSizeMultiplier',
+      1.3
+    );
+    expect(screen.getByText('أحد')).toHaveProp('maxFontSizeMultiplier', 1.3);
+    expect(screen.getByText('رمضان ١٤٤٥')).toHaveProp(
+      'maxFontSizeMultiplier',
+      2
+    );
+  });
+
   it('sets day numbers in medium, the selected day and today in bold', async () => {
     await render(<HilalCalendar defaultValue={MARCH_25} />);
     // 25 March is selected, 20 March is today, 26 March neither.
@@ -848,7 +888,7 @@ describe('HilalCalendar', () => {
     });
     expect(
       screen.getByRole('button', { name: /^اختر الشهر والسنة/ })
-    ).toHaveProp('hitSlop', { top: 9, bottom: 9, left: 6, right: 6 });
+    ).toHaveProp('hitSlop', { top: 8, bottom: 10, left: 6, right: 6 });
   });
 
   it('accepts theme and style overrides', async () => {

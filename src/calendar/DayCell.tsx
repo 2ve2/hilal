@@ -7,7 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import type { CalendarStyles } from './styles';
+import { MAX_CELL_FONT_SCALE, type CalendarStyles } from './styles';
 
 export type DayCellProps = {
   epochDay: number;
@@ -56,6 +56,7 @@ export function DayCellView({
         ]}
       >
         <Text
+          maxFontSizeMultiplier={MAX_CELL_FONT_SCALE}
           style={[
             styles.dayText,
             disabled && styles.disabledText,
@@ -67,6 +68,7 @@ export function DayCellView({
         </Text>
         {secondaryLabel !== null && (
           <Text
+            maxFontSizeMultiplier={MAX_CELL_FONT_SCALE}
             style={[
               styles.secondaryText,
               disabled && styles.disabledText,

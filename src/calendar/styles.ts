@@ -14,6 +14,15 @@ const fill = {
 
 export type CalendarStyles = ReturnType<typeof createStyles>;
 
+/**
+ * How far the phone's text size setting may grow the text of day cells,
+ * weekday names and picker buttons, which have a fixed size: up to 1.3 a
+ * day number and the date under it still fit a 48 pt cell.
+ */
+export const MAX_CELL_FONT_SCALE = 1.3;
+/** The same for the header and the toggle, which have room to grow. */
+export const MAX_HEADER_FONT_SCALE = 2;
+
 /** The text styles, which take the theme's fonts and font scale. */
 const TEXT_STYLES = [
   'toggleText',
