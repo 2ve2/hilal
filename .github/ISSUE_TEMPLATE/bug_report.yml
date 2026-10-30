@@ -7,7 +7,7 @@ body:
       value: |
         Thanks for taking the time to report a bug. The more precise the report, the faster it gets fixed.
 
-        **A date differs from an announced religious occasion?** Hilal follows the Umm al-Qura calendar. Occasions announced by moon sighting can differ by a day, and that is not a bug. See [Accuracy](https://github.com/2ve2/hilal#accuracy).
+        **A date differs from an announced religious occasion?** Hilal follows the Umm al-Qura calendar. Occasions announced by moon sighting can differ by a day, and that is not a bug. To follow a local sighting, use the `hijriAdjustment` prop. See [Accuracy](https://github.com/2ve2/hilal#accuracy).
   - type: checkboxes
     attributes:
       label: Before submitting

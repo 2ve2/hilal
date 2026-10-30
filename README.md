@@ -22,11 +22,11 @@ iOS, Android, web and Expo Go. Zero dependencies. Arabic-first.
 
 - **Umm al-Qura**, the official calendar of Saudi Arabia, tested against ICU on every day from 1937 to 2077.
 - **Hijri and Gregorian together**: switch the grid between them, and every day also shows its date in the other calendar.
-- **Arabic-first**: Arabic month and day names, Arabic-Indic digits (١٢٣), proper right-to-left layout. English with Latin digits is one prop away.
+- **Arabic-first**: Arabic month and day names, Arabic-Indic digits (`١٢٣`), proper right-to-left layout. English with Latin digits is one prop away.
 - **Cross-platform**: pure TypeScript and React Native core components. The same code runs on iOS, Android, the web and in Expo Go, with no native modules.
 - **Zero runtime dependencies**: no moment, no dayjs, no `Intl` calendars at runtime.
 - **Customizable**: light, dark, follow the system, or your own colors and fonts; styles for every part and your own button texts.
-- **Accessible**: every day is a button with a full spoken date and its selected and disabled state.
+- **Accessible**: every day is a button with a full spoken date, its selected and disabled state, and "today". Text follows the phone's text size within limits that keep the layout intact, and animations respect reduce motion.
 - **The engine is public**: convert and format Hijri dates without using the UI.
 
 ## Installation
@@ -40,6 +40,8 @@ npx expo install react-native-hilal
 ```
 
 `react` and `react-native` are the only peer dependencies. There is nothing to link and no native build step.
+
+Hilal is designed for phones first. On the web (React Native Web) it works the same, but text is drawn with the browser's fonts, so it can look slightly different.
 
 ## Quick start
 
@@ -74,7 +76,7 @@ export default function Screen() {
 }
 ```
 
-With the default `locale="ar"`, `formatted.hijri` is ١ رمضان ١٤٤٦ هـ and `formatted.gregorian` is ١ مارس ٢٠٢٥ in Arabic-Indic digits.
+With the default `locale="ar"`, `formatted.hijri` is `'١ رمضان ١٤٤٦ هـ'` and `formatted.gregorian` is `'١ مارس ٢٠٢٥'`, in Arabic-Indic digits.
 
 ## Examples
 
@@ -111,10 +113,10 @@ The [example app](example) shows every feature side by side. Run it with `yarn e
 | `showCalendarToggle`    | `boolean`                                            | `true`                              | Show the Hijri / Gregorian toggle.                                                                                                                                      |
 | `showSecondaryDate`     | `boolean`                                            | `true`                              | Show the other calendar's day under each day.                                                                                                                           |
 | `locale`                | `'ar' \| 'en'`                                       | `'ar'`                              | Language of month names, weekdays and labels.                                                                                                                           |
-| `digits`                | `'arabic' \| 'latin'`                                | `'arabic'` for `ar`, else `'latin'` | Arabic-Indic (١٢٣) or Latin (123) digits.                                                                                                                               |
+| `digits`                | `'arabic' \| 'latin'`                                | `'arabic'` for `ar`, else `'latin'` | Arabic-Indic (`١٢٣`) or Latin (`123`) digits.                                                                                                                           |
 | `direction`             | `'rtl' \| 'ltr' \| 'auto'`                           | `'auto'`                            | `auto` is right-to-left when the app is RTL (`I18nManager.isRTL`) or the locale is `ar`.                                                                                |
 | `firstDayOfWeek`        | `0 \| 1 \| 6`                                        | `0`                                 | `0` Sunday, `1` Monday, `6` Saturday.                                                                                                                                   |
-| `weekdayFormat`         | `'short' \| 'narrow'`                                | `'short'`                           | Weekday names above the days: أحد / Sun, or ح / S.                                                                                                                      |
+| `weekdayFormat`         | `'short' \| 'narrow'`                                | `'short'`                           | Weekday names above the days: `'أحد'` / `'Sun'`, or `'ح'` / `'S'`.                                                                                                      |
 | `minDate`               | `Date`                                               |                                     | Earliest selectable day. Navigation stops at its month.                                                                                                                 |
 | `maxDate`               | `Date`                                               |                                     | Latest selectable day. Navigation stops at its month.                                                                                                                   |
 | `isDateDisabled`        | `(date: SelectedDate) => boolean`                    |                                     | Return `true` to disable a day.                                                                                                                                         |
@@ -218,21 +220,23 @@ formatHijri({ year: 1446, month: 9, day: 1 }, { locale: 'en' }); // '1 Ramadan 1
 getHijriMonthLength(1446, 9); // 29
 ```
 
-Without options, `formatHijri` returns ١ رمضان ١٤٤٦ هـ (Arabic, Arabic-Indic digits).
+Without options, `formatHijri` returns `'١ رمضان ١٤٤٦ هـ'` (Arabic, Arabic-Indic digits).
 
-| Function                                                  | Description                                                                                             |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `toHijri(date: Date, { adjustment? }): HijriDate`         | Hijri date of the local calendar day of `date`. The time of day is ignored.                             |
-| `toGregorian(hijri: HijriDate, { adjustment? }): Date`    | A `Date` at local midnight of the matching Gregorian day.                                               |
-| `getHijriMonthLength(year, month): 29 \| 30`              | Days in a Hijri month (`month` is 1–12).                                                                |
-| `isValidHijri(hijri: HijriDate): boolean`                 | Whether the date exists and is in the supported range.                                                  |
-| `getSupportedRange(): { min: HijriDate; max: HijriDate }` | `1 Muharram 1356` to `30 Dhu al-Hijjah 1500`.                                                           |
-| `formatHijri(hijri, { locale?, digits? }): string`        | Arabic by default (١ رمضان ١٤٤٦ هـ), or `'1 Ramadan 1446 AH'` with `locale: 'en'`.                      |
-| `getMonthNames(calendar, locale): string[]`               | 12 month names. Arabic Gregorian names use the Gulf style (يناير، فبراير، مارس), not the Levantine one. |
-| `getWeekdayNames(locale, format?): string[]`              | 7 weekday names, Sunday first (matches `Date#getDay()`), `'long'`, `'short'` or `'narrow'`.             |
-| `toArabicDigits(input: string \| number): string`         | `'1446'` → `'١٤٤٦'`.                                                                                    |
+| Function                                                  | Description                                                                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `toHijri(date: Date, { adjustment? }): HijriDate`         | Hijri date of the local calendar day of `date`. The time of day is ignored.                                         |
+| `toGregorian(hijri: HijriDate, { adjustment? }): Date`    | A `Date` at local midnight of the matching Gregorian day.                                                           |
+| `getHijriMonthLength(year, month): 29 \| 30`              | Days in a Hijri month (`month` is 1–12).                                                                            |
+| `isValidHijri(hijri: HijriDate): boolean`                 | Whether the date exists and is in the supported range.                                                              |
+| `getSupportedRange(): { min: HijriDate; max: HijriDate }` | `1 Muharram 1356` to `30 Dhu al-Hijjah 1500`.                                                                       |
+| `formatHijri(hijri, { locale?, digits? }): string`        | Arabic by default (`'١ رمضان ١٤٤٦ هـ'`), or `'1 Ramadan 1446 AH'` with `locale: 'en'`.                              |
+| `getMonthNames(calendar, locale): string[]`               | 12 month names. Arabic Gregorian names use the Gulf style (`'يناير'`, `'فبراير'`, `'مارس'`), not the Levantine one. |
+| `getWeekdayNames(locale, format?): string[]`              | 7 weekday names, Sunday first (matches `Date#getDay()`), `'long'`, `'short'` or `'narrow'`.                         |
+| `toArabicDigits(input: string \| number): string`         | `'1446'` → `'١٤٤٦'`.                                                                                                |
 
 `HijriDate` is `{ year: number; month: number; day: number }` with `month` from 1 to 12. Dates outside the supported range (1937-03-14 to 2077-11-16) throw a `RangeError`.
+
+All types are exported too: `HilalCalendarProps`, `SelectedDate`, `HilalTheme`, `ThemeProp`, `HilalStyles`, `HilalLabels`, `HijriDate`, `HijriConversionOptions`, `FormatHijriOptions`, `CalendarType`, `Locale`, `Digits` and `WeekdayFormat`.
 
 Dates are always handled as **local calendar days**. A day is never derived from a UTC timestamp, so the result doesn't depend on the time of day or the time zone offset.
 
@@ -281,7 +285,7 @@ Gregorian dates never change. The shift moves the whole calendar, so months keep
 
 ## Roadmap
 
-Ideas for v2:
+Planned next:
 
 - Range selection
 - Event dots on days
@@ -290,7 +294,7 @@ Ideas for v2:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, commit conventions and how to send a pull request.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, commit conventions and how to send a pull request. To report a security issue, see [SECURITY.md](SECURITY.md).
 
 ## License
 
