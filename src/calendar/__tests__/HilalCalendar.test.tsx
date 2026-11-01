@@ -807,6 +807,34 @@ describe('HilalCalendar', () => {
       expect(ramadan('١٦')).toBeSelected();
     });
 
+    it('formats the reported dates only when they are read', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          selectionMode="range"
+          locale="en"
+          onRangeChange={onRangeChange}
+        />
+      );
+      await fireEvent.press(
+        screen.getByRole('button', { name: /^Monday, 15 Ramadan/ })
+      );
+      const { start } = onRangeChange.mock.calls[0]![0] as {
+        start: SelectedDate;
+      };
+      // Lazy, but reads, spreads and serializes like plain data.
+      expect(start.formatted.hijri).toBe('15 Ramadan 1445 AH');
+      expect({ ...start.formatted }).toEqual({
+        gregorian: '25 March 2024',
+        hijri: '15 Ramadan 1445 AH',
+      });
+      expect(JSON.parse(JSON.stringify(start.formatted))).toEqual({
+        gregorian: '25 March 2024',
+        hijri: '15 Ramadan 1445 AH',
+      });
+    });
+
     it('leaves single selection as it was', async () => {
       await render(<HilalCalendar defaultValue={MARCH_25} />);
       expect(bands()).toHaveLength(0);

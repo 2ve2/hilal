@@ -149,12 +149,27 @@ function selectedDateOf(
   adjustment: number
 ): SelectedDate {
   const hijri = hijriOfEpochDay(epochDay, 'HilalCalendar', adjustment);
+  // Formatted on first read: isDateDisabled runs for every day of a
+  // range and rarely reads the texts. Enumerable getters, so the object
+  // still spreads and serializes like plain data.
+  let gregorianText: string | undefined;
+  let hijriText: string | undefined;
   return {
     gregorian: localDateOfEpochDay(epochDay),
     hijri,
     formatted: {
-      gregorian: formatGregorian(civilFromDays(epochDay), { locale, digits }),
-      hijri: formatHijri(hijri, { locale, digits }),
+      get gregorian() {
+        return (gregorianText ??= formatGregorian(civilFromDays(epochDay), {
+          locale,
+          digits,
+        }));
+      },
+      get hijri() {
+        return (hijriText ??= formatHijri(
+          hijriOfEpochDay(epochDay, 'HilalCalendar', adjustment),
+          { locale, digits }
+        ));
+      },
     },
   };
 }
