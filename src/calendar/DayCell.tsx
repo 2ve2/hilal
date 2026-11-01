@@ -7,6 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import type { RangePosition } from './range';
 import type { CalendarStyles } from './styles';
 
 export type DayCellProps = {
@@ -15,6 +16,10 @@ export type DayCellProps = {
   secondaryLabel: string | null;
   accessibilityLabel: string;
   selected: boolean;
+  /** Where the day sits in a picked range, or null outside one. */
+  rangePosition: RangePosition | null;
+  /** The side of the cell where the next day is: 'start' or 'end'. */
+  nextSide: 'start' | 'end';
   today: boolean;
   disabled: boolean;
   styles: CalendarStyles;
@@ -35,6 +40,8 @@ export function DayCellView({
   secondaryLabel,
   accessibilityLabel,
   selected,
+  rangePosition,
+  nextSide,
   today,
   disabled,
   styles,
@@ -44,10 +51,27 @@ export function DayCellView({
 }: DayCellProps) {
   return (
     <View style={styles.slot}>
+      {rangePosition !== null && rangePosition !== 'single' && (
+        // Joins the days of a range; half a band at its ends.
+        <View
+          testID="hilal-range-band"
+          style={[
+            styles.rangeBand,
+            rangePosition === 'middle'
+              ? fullBand
+              : halfBand[
+                  rangePosition === 'start' ? nextSide : otherSide(nextSide)
+                ],
+          ]}
+        />
+      )}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
-        accessibilityState={{ selected, disabled }}
+        accessibilityState={{
+          selected: selected || rangePosition === 'middle',
+          disabled,
+        }}
         disabled={disabled}
         onPress={() => onSelect(epochDay)}
         style={({ pressed }) => [
@@ -85,5 +109,15 @@ export function DayCellView({
     </View>
   );
 }
+
+const fullBand = { start: 0, end: 0 } as const;
+/** Half a band, on the start or the end side of the cell. */
+const halfBand = {
+  start: { start: 0, width: '50%' },
+  end: { end: 0, width: '50%' },
+} as const;
+
+const otherSide = (side: 'start' | 'end') =>
+  side === 'start' ? 'end' : 'start';
 
 export const DayCell = memo(DayCellView);

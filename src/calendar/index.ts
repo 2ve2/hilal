@@ -6,8 +6,10 @@ export {
   type ThemeProp,
 } from './theme';
 export type {
+  DateRange,
   HilalCalendarProps,
   HilalLabels,
   HilalStyles,
   SelectedDate,
+  SelectedRange,
 } from './types';

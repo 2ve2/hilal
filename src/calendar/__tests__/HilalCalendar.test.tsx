@@ -615,6 +615,335 @@ describe('HilalCalendar', () => {
     });
   });
 
+  describe('range selection', () => {
+    // Ramadan 1445: 1 Ramadan is Monday 11 March 2024.
+    const ramadan = (d: string) => day(new RegExp(`، ${d} رمضان ١٤٤٥`));
+    const bands = () =>
+      screen.queryAllByTestId('hilal-range-band', {
+        includeHiddenElements: true,
+      });
+
+    it('picks a start, then an end, and reports both', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          selectionMode="range"
+          onRangeChange={onRangeChange}
+        />
+      );
+      expect(bands()).toHaveLength(0);
+
+      await fireEvent.press(ramadan('١٥'));
+      expect(onRangeChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ end: null, days: null })
+      );
+      const first = onRangeChange.mock.calls[0]![0] as {
+        start: SelectedDate;
+      };
+      expect(first.start.hijri).toEqual({ year: 1445, month: 9, day: 15 });
+      expect(ramadan('١٥')).toBeSelected();
+      expect(ramadan('١٥')).toHaveAccessibleName(/، بداية الفترة$/);
+
+      await fireEvent.press(ramadan('١٨'));
+      const second = onRangeChange.mock.calls[1]![0] as {
+        start: SelectedDate;
+        end: SelectedDate;
+        days: number;
+      };
+      expect(second.end.hijri).toEqual({ year: 1445, month: 9, day: 18 });
+      expect(second.end.gregorian).toEqual(new Date(2024, 2, 28));
+      expect(second.days).toBe(4);
+      // Both ends and the two days between are selected; the band joins
+      // them: half at each end, full in between.
+      for (const d of ['١٥', '١٦', '١٧', '١٨']) {
+        expect(ramadan(d)).toBeSelected();
+      }
+      expect(ramadan('١٩')).not.toBeSelected();
+      expect(bands()).toHaveLength(4);
+      expect(ramadan('١٨')).toHaveAccessibleName(/، نهاية الفترة$/);
+    });
+
+    it('starts over after a complete range and before the start', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          selectionMode="range"
+          onRangeChange={onRangeChange}
+        />
+      );
+      await fireEvent.press(ramadan('١٥'));
+      await fireEvent.press(ramadan('١٨'));
+      await fireEvent.press(ramadan('٢٠'));
+      expect(onRangeChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ end: null })
+      );
+      expect(bands()).toHaveLength(0);
+      await fireEvent.press(ramadan('٥'));
+      expect(onRangeChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ end: null })
+      );
+      expect(ramadan('٢٠')).not.toBeSelected();
+      expect(ramadan('٥')).toBeSelected();
+    });
+
+    it('never crosses a disabled day', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          selectionMode="range"
+          // Fridays: 15 March 2024 is 5 Ramadan.
+          isDateDisabled={({ gregorian }) => gregorian.getDay() === 5}
+          onRangeChange={onRangeChange}
+        />
+      );
+      await fireEvent.press(ramadan('٢'));
+      await fireEvent.press(ramadan('٨'));
+      expect(onRangeChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ end: null, days: null })
+      );
+      expect(ramadan('٨')).toBeSelected();
+      expect(ramadan('٢')).not.toBeSelected();
+    });
+
+    it('shows a controlled range across months, from its start month', async () => {
+      await render(
+        <HilalCalendar
+          selectionMode="range"
+          // 28 Sha'ban to 3 Ramadan 1445.
+          rangeValue={{
+            start: new Date(2024, 2, 9),
+            end: new Date(2024, 2, 13),
+          }}
+        />
+      );
+      expect(header()).toHaveTextContent('شعبان ١٤٤٥');
+      await fireEvent.press(
+        screen.getByRole('button', { name: 'الشهر التالي' })
+      );
+      expect(ramadan('١')).toBeSelected();
+      expect(ramadan('٣')).toHaveAccessibleName(/، نهاية الفترة$/);
+      expect(ramadan('٤')).not.toBeSelected();
+    });
+
+    it('keeps a controlled range until the parent changes it', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          selectionMode="range"
+          rangeValue={{ start: new Date(2024, 2, 25) }}
+          onRangeChange={onRangeChange}
+        />
+      );
+      await fireEvent.press(ramadan('١٨'));
+      expect(onRangeChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ days: 4 })
+      );
+      // Not changed by the parent: still only the start.
+      expect(bands()).toHaveLength(0);
+    });
+
+    it('draws the band towards the next day in both directions', async () => {
+      const range = {
+        start: new Date(2024, 2, 25),
+        end: new Date(2024, 2, 26),
+      };
+      const { rerender } = await render(
+        <HilalCalendar selectionMode="range" defaultRangeValue={range} />
+      );
+      // Arabic in a left-to-right app: rows are reversed, so the next day
+      // is on the start side.
+      const [arStart] = bands();
+      expect(arStart).toHaveStyle({ start: 0, width: '50%' });
+      await rerender(
+        <HilalCalendar
+          selectionMode="range"
+          defaultRangeValue={range}
+          locale="en"
+        />
+      );
+      const [enStart] = bands();
+      expect(enStart).toHaveStyle({ end: 0, width: '50%' });
+    });
+
+    it('draws the band on the end side in a right-to-left app', async () => {
+      const original = Object.getOwnPropertyDescriptor(I18nManager, 'isRTL');
+      Object.defineProperty(I18nManager, 'isRTL', {
+        configurable: true,
+        get: () => true,
+      });
+      try {
+        await render(
+          <HilalCalendar
+            selectionMode="range"
+            defaultRangeValue={{
+              start: new Date(2024, 2, 25),
+              end: new Date(2024, 2, 26),
+            }}
+          />
+        );
+        // Rows are 'row', which React Native lays out right-to-left, so
+        // the next day is on the end side (the left).
+        expect(bands()[0]).toHaveStyle({ end: 0, width: '50%' });
+      } finally {
+        Object.defineProperty(I18nManager, 'isRTL', original!);
+      }
+    });
+
+    it('puts the ends of a reversed range in order', async () => {
+      await render(
+        <HilalCalendar
+          selectionMode="range"
+          rangeValue={{
+            start: new Date(2024, 2, 28),
+            end: new Date(2024, 2, 25),
+          }}
+        />
+      );
+      expect(ramadan('١٥')).toHaveAccessibleName(/، بداية الفترة$/);
+      expect(ramadan('١٨')).toHaveAccessibleName(/، نهاية الفترة$/);
+      expect(ramadan('١٦')).toBeSelected();
+    });
+
+    it('formats the reported dates only when they are read', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          selectionMode="range"
+          locale="en"
+          onRangeChange={onRangeChange}
+        />
+      );
+      await fireEvent.press(
+        screen.getByRole('button', { name: /^Monday, 15 Ramadan/ })
+      );
+      const { start } = onRangeChange.mock.calls[0]![0] as {
+        start: SelectedDate;
+      };
+      // Lazy, but reads, spreads and serializes like plain data.
+      expect(start.formatted.hijri).toBe('15 Ramadan 1445 AH');
+      expect({ ...start.formatted }).toEqual({
+        gregorian: '25 March 2024',
+        hijri: '15 Ramadan 1445 AH',
+      });
+      expect(JSON.parse(JSON.stringify(start.formatted))).toEqual({
+        gregorian: '25 March 2024',
+        hijri: '15 Ramadan 1445 AH',
+      });
+    });
+
+    it('colors the band with the primary color, or styles.rangeBand', async () => {
+      const range = {
+        start: new Date(2024, 2, 25),
+        end: new Date(2024, 2, 28),
+      };
+      const { rerender } = await render(
+        <HilalCalendar
+          selectionMode="range"
+          defaultRangeValue={range}
+          theme={{ primary: '#7C3AED' }}
+        />
+      );
+      expect(bands()[1]).toHaveStyle({
+        backgroundColor: '#7C3AED',
+        opacity: 0.15,
+      });
+      await rerender(
+        <HilalCalendar
+          selectionMode="range"
+          defaultRangeValue={range}
+          styles={{ rangeBand: { backgroundColor: '#F59E0B', opacity: 0.3 } }}
+        />
+      );
+      for (const band of bands()) {
+        expect(band).toHaveStyle({ backgroundColor: '#F59E0B', opacity: 0.3 });
+      }
+    });
+
+    it('reads custom labels at the ends of the range', async () => {
+      await render(
+        <HilalCalendar
+          selectionMode="range"
+          defaultRangeValue={{
+            start: new Date(2024, 2, 25),
+            end: new Date(2024, 2, 28),
+          }}
+          labels={{ rangeStart: 'الوصول', rangeEnd: 'المغادرة' }}
+        />
+      );
+      expect(ramadan('١٥')).toHaveAccessibleName(/، الوصول$/);
+      expect(ramadan('١٨')).toHaveAccessibleName(/، المغادرة$/);
+    });
+
+    it('shows nothing for rangeValue={null} and keeps it controlled', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          selectionMode="range"
+          rangeValue={null}
+          onRangeChange={onRangeChange}
+        />
+      );
+      await fireEvent.press(ramadan('١٥'));
+      expect(onRangeChange).toHaveBeenCalledTimes(1);
+      expect(ramadan('١٥')).not.toBeSelected();
+    });
+
+    it('reports Hijri dates with hijriAdjustment', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          selectionMode="range"
+          hijriAdjustment={1}
+          onRangeChange={onRangeChange}
+        />
+      );
+      // With +1, 25 March 2024 is 16 Ramadan.
+      await fireEvent.press(ramadan('١٦'));
+      const { start } = onRangeChange.mock.calls[0]![0] as {
+        start: SelectedDate;
+      };
+      expect(start.gregorian).toEqual(new Date(2024, 2, 25));
+      expect(start.hijri).toEqual({ year: 1445, month: 9, day: 16 });
+    });
+
+    it('works on the Gregorian grid and keeps the range when switching', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          calendar="gregorian"
+          selectionMode="range"
+          onRangeChange={onRangeChange}
+        />
+      );
+      const march = (d: string) => day(new RegExp(`، ${d} مارس ٢٠٢٤`));
+      await fireEvent.press(march('٢٥'));
+      await fireEvent.press(march('٢٨'));
+      expect(onRangeChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ days: 4 })
+      );
+      expect(bands()).toHaveLength(4);
+      // Switching to the Hijri grid keeps the same days picked.
+      await fireEvent.press(screen.getByRole('button', { name: 'هجري' }));
+      expect(header()).toHaveTextContent('رمضان ١٤٤٥');
+      expect(ramadan('١٥')).toHaveAccessibleName(/، بداية الفترة$/);
+      expect(ramadan('١٨')).toHaveAccessibleName(/، نهاية الفترة$/);
+      expect(bands()).toHaveLength(4);
+    });
+
+    it('leaves single selection as it was', async () => {
+      await render(<HilalCalendar defaultValue={MARCH_25} />);
+      expect(bands()).toHaveLength(0);
+      expect(day(/^الاثنين، ١٥ رمضان/)).not.toHaveAccessibleName(/الفترة/);
+    });
+  });
+
   describe('weekdayFormat', () => {
     // The texts of the weekday row, first column first.
     const weekdayRow = (anyName: string) =>

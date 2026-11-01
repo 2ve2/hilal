@@ -50,19 +50,33 @@ import {
 } from './month';
 import { PickerGrid, type PickerGridItem } from './PickerGrid';
 import {
+  nextRange,
+  rangeLength,
+  rangePosition,
+  type DayRangeSelection,
+  type RangePosition,
+} from './range';
+import {
   createStyles,
   MAX_CELL_FONT_SCALE,
   MAX_HEADER_FONT_SCALE,
   withSlots,
 } from './styles';
 import { resolveTheme } from './theme';
-import type { HilalCalendarProps, HilalLabels, SelectedDate } from './types';
+import type {
+  DateRange,
+  HilalCalendarProps,
+  HilalLabels,
+  SelectedDate,
+} from './types';
 
 const LABELS: Record<Locale, Required<HilalLabels> & { separator: string }> = {
   ar: {
     hijri: 'هجري',
     gregorian: 'ميلادي',
     today: 'اليوم',
+    rangeStart: 'بداية الفترة',
+    rangeEnd: 'نهاية الفترة',
     thisMonth: 'هذا الشهر',
     thisYear: 'هذه السنة',
     previousMonth: 'الشهر السابق',
@@ -79,6 +93,8 @@ const LABELS: Record<Locale, Required<HilalLabels> & { separator: string }> = {
     hijri: 'Hijri',
     gregorian: 'Gregorian',
     today: 'Today',
+    rangeStart: 'Start of range',
+    rangeEnd: 'End of range',
     thisMonth: 'This month',
     thisYear: 'This year',
     previousMonth: 'Previous month',
@@ -106,6 +122,26 @@ function epochDayOf(date: Date | undefined) {
     : undefined;
 }
 
+/** A DateRange as epoch days, its ends in order; undefined without a start. */
+function rangeOfDates(
+  dates: DateRange | undefined
+): DayRangeSelection | undefined {
+  const start = epochDayOf(dates?.start);
+  if (start === undefined) {
+    return undefined;
+  }
+  const end = epochDayOf(dates?.end ?? undefined);
+  if (end === undefined) {
+    return { start };
+  }
+  return { start: Math.min(start, end), end: Math.max(start, end) };
+}
+
+/** The days of a range drawn as selected: its two ends. */
+function isRangeEnd(position: RangePosition | null) {
+  return position === 'start' || position === 'end' || position === 'single';
+}
+
 function selectedDateOf(
   epochDay: number,
   locale: Locale,
@@ -113,12 +149,27 @@ function selectedDateOf(
   adjustment: number
 ): SelectedDate {
   const hijri = hijriOfEpochDay(epochDay, 'HilalCalendar', adjustment);
+  // Formatted on first read: isDateDisabled runs for every day of a
+  // range and rarely reads the texts. Enumerable getters, so the object
+  // still spreads and serializes like plain data.
+  let gregorianText: string | undefined;
+  let hijriText: string | undefined;
   return {
     gregorian: localDateOfEpochDay(epochDay),
     hijri,
     formatted: {
-      gregorian: formatGregorian(civilFromDays(epochDay), { locale, digits }),
-      hijri: formatHijri(hijri, { locale, digits }),
+      get gregorian() {
+        return (gregorianText ??= formatGregorian(civilFromDays(epochDay), {
+          locale,
+          digits,
+        }));
+      },
+      get hijri() {
+        return (hijriText ??= formatHijri(
+          hijriOfEpochDay(epochDay, 'HilalCalendar', adjustment),
+          { locale, digits }
+        ));
+      },
     },
   };
 }
@@ -156,6 +207,10 @@ export function HilalCalendar({
   value,
   defaultValue,
   onChange,
+  selectionMode = 'single',
+  rangeValue,
+  defaultRangeValue,
+  onRangeChange,
   calendar: calendarProp = 'hijri',
   onCalendarChange,
   showCalendarToggle = true,
@@ -245,17 +300,30 @@ export function HilalCalendar({
   );
   const selectedDay = value !== undefined ? epochDayOf(value) : internalDay;
 
+  // Range selection: controlled through `rangeValue`, otherwise internal.
+  const rangeMode = selectionMode === 'range';
+  const [internalRange, setInternalRange] = useState(() =>
+    rangeOfDates(defaultRangeValue)
+  );
+  const pickedRange =
+    rangeValue !== undefined
+      ? rangeOfDates(rangeValue ?? undefined)
+      : internalRange;
+  // The day the calendar opens on and follows: the selected day, or the
+  // start of the range.
+  const anchorDay = rangeMode ? pickedRange?.start : selectedDay;
+
   // Calendar: internal state that follows the prop when the prop changes.
   const [calendar, setCalendar] = useState(calendarProp);
   const [lastCalendarProp, setLastCalendarProp] = useState(calendarProp);
   const [month, setMonth] = useState(() =>
     monthContaining(
-      clampDay(selectedDay ?? today, range),
+      clampDay(anchorDay ?? today, range),
       calendarProp,
       adjustment
     )
   );
-  const [lastSelectedDay, setLastSelectedDay] = useState(selectedDay);
+  const [lastAnchorDay, setLastAnchorDay] = useState(anchorDay);
 
   // The month and year picker: which grid is shown, the year whose months
   // are listed, and the first year of the page of years.
@@ -279,7 +347,7 @@ export function HilalCalendar({
     setView('days');
     // Keep the selected day in view, or else the month being looked at.
     const anchor =
-      selectedDay ?? clampDay(monthStart(current, adjustment), range);
+      anchorDay ?? clampDay(monthStart(current, adjustment), range);
     setMonth(monthContaining(clampDay(anchor, range), next, adjustment));
   };
 
@@ -287,7 +355,7 @@ export function HilalCalendar({
     month,
     calendar,
     range,
-    selectedDay ?? today,
+    anchorDay ?? today,
     adjustment
   );
 
@@ -297,14 +365,14 @@ export function HilalCalendar({
     setLastCalendarProp(calendarProp);
     switchTo(calendarProp, shown);
   }
-  if (selectedDay !== lastSelectedDay) {
-    setLastSelectedDay(selectedDay);
+  if (anchorDay !== lastAnchorDay) {
+    setLastAnchorDay(anchorDay);
     if (
-      selectedDay !== undefined &&
-      selectedDay >= range.min &&
-      selectedDay <= range.max
+      anchorDay !== undefined &&
+      anchorDay >= range.min &&
+      anchorDay <= range.max
     ) {
-      const containing = monthContaining(selectedDay, calendar, adjustment);
+      const containing = monthContaining(anchorDay, calendar, adjustment);
       if (containing.year !== shown.year || containing.month !== shown.month) {
         setMonth(containing);
       }
@@ -380,6 +448,24 @@ export function HilalCalendar({
   );
 
   const onSelect = useStableCallback((epochDay: number) => {
+    if (rangeMode) {
+      const dateOf = (day: number) =>
+        selectedDateOf(day, locale, digits, adjustment);
+      const next = nextRange(
+        pickedRange,
+        epochDay,
+        isDateDisabled && ((day) => isDateDisabled(dateOf(day)))
+      );
+      if (rangeValue === undefined) {
+        setInternalRange(next);
+      }
+      onRangeChange?.({
+        start: dateOf(next.start),
+        end: next.end === undefined ? null : dateOf(next.end),
+        days: rangeLength(next),
+      });
+      return;
+    }
     if (value === undefined) {
       setInternalDay(epochDay);
     }
@@ -392,6 +478,24 @@ export function HilalCalendar({
     }
     switchTo(next, shown);
     onCalendarChange?.(next);
+  };
+
+  // A day's spoken label: its date, then today and the ends of a range.
+  const dayLabel = (cell: { epochDay: number; accessibilityLabel: string }) => {
+    const position = rangeMode
+      ? rangePosition(pickedRange, cell.epochDay)
+      : null;
+    const label = withCurrent(
+      cell.accessibilityLabel,
+      cell.epochDay === today,
+      labels.today
+    );
+    if (position === 'start' || position === 'single') {
+      return `${label}${labels.separator}${labels.rangeStart}`;
+    }
+    return position === 'end'
+      ? `${label}${labels.separator}${labels.rangeEnd}`
+      : label;
   };
 
   // Today's month and year in the shown calendar, for the picker's ring.
@@ -692,12 +796,18 @@ export function HilalCalendar({
                   <DayCell
                     key={cell.epochDay}
                     {...cell}
-                    accessibilityLabel={withCurrent(
-                      cell.accessibilityLabel,
-                      cell.epochDay === today,
-                      labels.today
-                    )}
-                    selected={cell.epochDay === selectedDay}
+                    accessibilityLabel={dayLabel(cell)}
+                    selected={
+                      rangeMode
+                        ? isRangeEnd(rangePosition(pickedRange, cell.epochDay))
+                        : cell.epochDay === selectedDay
+                    }
+                    rangePosition={
+                      rangeMode
+                        ? rangePosition(pickedRange, cell.epochDay)
+                        : null
+                    }
+                    nextSide={row === 'row' ? 'end' : 'start'}
                     today={cell.epochDay === today}
                     styles={dayStyles}
                     dayStyle={stableDayStyle}
