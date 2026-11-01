@@ -116,7 +116,8 @@ export type HilalCalendarProps = {
   /**
    * 'single' (default) picks one day. 'range' picks a start and an end:
    * the first press picks the start, the second the end, and a third
-   * starts over. A range never crosses a disabled day.
+   * starts over. A range never crosses a disabled day. In range mode,
+   * `value`, `defaultValue` and `onChange` are not used.
    */
   selectionMode?: 'single' | 'range';
   /** Picked range (controlled), with `selectionMode="range"`. */

@@ -151,7 +151,7 @@ type SelectedRange = {
 };
 ```
 
-To control it, pass `rangeValue={{ start, end }}` (leave `end` out while only the start is picked) and update it in `onRangeChange` from `start.gregorian` and `end?.gregorian`. The calendar opens on the month of the start.
+In range mode, `value`, `defaultValue` and `onChange` are not used. To control it, pass `rangeValue={{ start, end }}` (leave `end` out while only the start is picked) and update it in `onRangeChange` from `start.gregorian` and `end?.gregorian`. The calendar opens on the month of the start.
 
 ### Theme
 
