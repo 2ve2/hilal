@@ -4,6 +4,7 @@ import {
   HilalCalendar,
   type Locale,
   type SelectedDate,
+  type SelectedRange,
 } from 'react-native-hilal';
 
 export type Demo = {
@@ -97,6 +98,33 @@ function ControlledDemo({ locale }: { locale: Locale }) {
           </>
         ) : (
           <Text style={styles.placeholder}>Pick a day to see the value</Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function RangeDemo({ locale }: { locale: Locale }) {
+  const [range, setRange] = useState<SelectedRange>();
+  return (
+    <View>
+      <HilalCalendar
+        locale={locale}
+        selectionMode="range"
+        onRangeChange={setRange}
+      />
+      <View style={styles.output}>
+        {range ? (
+          <>
+            <Output label="start" value={range.start.formatted.hijri} />
+            <Output
+              label="end"
+              value={range.end ? range.end.formatted.hijri : 'null'}
+            />
+            <Output label="days" value={String(range.days)} />
+          </>
+        ) : (
+          <Text style={styles.placeholder}>Pick a start and an end day</Text>
         )}
       </View>
     </View>
@@ -232,6 +260,17 @@ ${Object.entries(violet)
         isDateDisabled={isFriday}
       />
     ),
+  },
+  {
+    id: 'range-selection',
+    title: () => 'Range',
+    description: () =>
+      'Pick a start and an end. A third press starts over; a range never crosses a disabled day.',
+    dark: 'auto',
+    code: (locale) =>
+      `const [range, setRange] = useState<SelectedRange>();\n\n` +
+      jsx(locale, ['selectionMode="range"', 'onRangeChange={setRange}']),
+    Component: RangeDemo,
   },
   {
     id: 'controlled',
