@@ -17,6 +17,7 @@ iOS, Android, web and Expo Go. Zero dependencies. Arabic-first.
 
 - **Umm al-Qura**, the official calendar of Saudi Arabia, tested against ICU on every day from 1937 to 2077.
 - **Hijri and Gregorian together**: switch the grid between them, and every day also shows its date in the other calendar.
+- **One day or a range**: pick a single day, or a start and an end for bookings and leave.
 - **Arabic-first**: Arabic month and day names, Arabic-Indic digits (`١٢٣`), proper right-to-left layout. English with Latin digits is one prop away.
 - **Cross-platform**: pure TypeScript and React Native core components. The same code runs on iOS, Android, the web and in Expo Go, with no native modules.
 - **Zero runtime dependencies**: no moment, no dayjs, no `Intl` calendars at runtime.
@@ -103,6 +104,10 @@ The [example app](example) shows every feature side by side. Run it with `yarn e
 | `value`                 | `Date`                                               |                                     | Selected day (controlled). Only the local calendar day is used.                                                                                                         |
 | `defaultValue`          | `Date`                                               |                                     | Initially selected day (uncontrolled).                                                                                                                                  |
 | `onChange`              | `(date: SelectedDate) => void`                       |                                     | Called when the user picks a day.                                                                                                                                       |
+| `selectionMode`         | `'single' \| 'range'`                                | `'single'`                          | Pick one day, or a range. See [Range selection](#range-selection).                                                                                                      |
+| `rangeValue`            | `DateRange \| null`                                  |                                     | Picked range (controlled).                                                                                                                                              |
+| `defaultRangeValue`     | `DateRange`                                          |                                     | Initially picked range (uncontrolled).                                                                                                                                  |
+| `onRangeChange`         | `(range: SelectedRange) => void`                     |                                     | Called after each press in range mode.                                                                                                                                  |
 | `calendar`              | `'hijri' \| 'gregorian'`                             | `'hijri'`                           | Calendar of the month grid. The grid follows this prop when it changes.                                                                                                 |
 | `onCalendarChange`      | `(calendar) => void`                                 |                                     | Called when the user switches calendars with the toggle.                                                                                                                |
 | `showCalendarToggle`    | `boolean`                                            | `true`                              | Show the Hijri / Gregorian toggle.                                                                                                                                      |
@@ -127,6 +132,26 @@ The [example app](example) shows every feature side by side. Run it with `yarn e
 Navigation never goes past `minDate`/`maxDate` or the edges of the supported range (1356–1500 AH), so the calendar can't show a broken month.
 
 To jump far, for example to a date of birth, press the month title: it opens the 12 months of that year, the arrows change the year, and pressing the year opens a page of 12 years. Months and years with no selectable day are disabled. The grids fade in, keeping the calendar the same height, and switch without animation when the system asks to reduce motion. Turn the picker off with `showMonthYearPicker={false}`.
+
+### Range selection
+
+```tsx
+const [range, setRange] = useState<SelectedRange>();
+
+<HilalCalendar selectionMode="range" onRangeChange={setRange} />;
+```
+
+The first press picks the start and the second the end. A third press starts a new range, and so does a press before the start. A range never crosses a day disabled by `isDateDisabled`: a press past one starts a new range there. `onRangeChange` is called after every press:
+
+```ts
+type SelectedRange = {
+  start: SelectedDate;
+  end: SelectedDate | null; // null while only the start is picked
+  days: number | null; // both ends included: 1 for a one-day range
+};
+```
+
+To control it, pass `rangeValue={{ start, end }}` (leave `end` out while only the start is picked) and update it in `onRangeChange` from `start.gregorian` and `end?.gregorian`. The calendar opens on the month of the start.
 
 ### Theme
 
@@ -185,6 +210,7 @@ For anything else, `styles` takes a style for each part, merged over the theme's
 | Weekday names            | `weekdayText`                                                                |
 | Days                     | `day`, `dayText`, `secondaryDayText`                                         |
 | Day states               | `selectedDay`, `selectedDayText`, `today`, `todayDayText`, `disabledDayText` |
+| Range                    | `rangeBand`                                                                  |
 | Month and year picker    | `pickerItem`, `pickerText`                                                   |
 
 The day states apply to day cells only, not to the month and year picker.
@@ -195,7 +221,7 @@ The day states apply to day cells only, not to the month and year picker.
 <HilalCalendar labels={{ hijri: 'هـ', gregorian: 'م' }} />
 ```
 
-The keys are `hijri`, `gregorian`, `today`, `thisMonth`, `thisYear`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`, `chooseMonth` and `chooseYear`.
+The keys are `hijri`, `gregorian`, `today`, `thisMonth`, `thisYear`, `rangeStart`, `rangeEnd`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`, `chooseMonth` and `chooseYear`.
 
 ## Core API
 
@@ -231,7 +257,7 @@ Without options, `formatHijri` returns `'١ رمضان ١٤٤٦ هـ'` (Arabic, 
 
 `HijriDate` is `{ year: number; month: number; day: number }` with `month` from 1 to 12. Dates outside the supported range (1937-03-14 to 2077-11-16) throw a `RangeError`.
 
-All types are exported too: `HilalCalendarProps`, `SelectedDate`, `HilalTheme`, `ThemeProp`, `HilalStyles`, `HilalLabels`, `HijriDate`, `HijriConversionOptions`, `FormatHijriOptions`, `CalendarType`, `Locale`, `Digits` and `WeekdayFormat`.
+All types are exported too: `HilalCalendarProps`, `SelectedDate`, `SelectedRange`, `DateRange`, `HilalTheme`, `ThemeProp`, `HilalStyles`, `HilalLabels`, `HijriDate`, `HijriConversionOptions`, `FormatHijriOptions`, `CalendarType`, `Locale`, `Digits` and `WeekdayFormat`.
 
 Dates are always handled as **local calendar days**. A day is never derived from a UTC timestamp, so the result doesn't depend on the time of day or the time zone offset.
 
@@ -282,7 +308,6 @@ Gregorian dates never change. The shift moves the whole calendar, so months keep
 
 Planned next:
 
-- Range selection
 - Event dots on days
 - Swipe between months
 - Ready-made bottom sheet and modal variants
