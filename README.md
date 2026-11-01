@@ -153,6 +153,20 @@ type SelectedRange = {
 
 In range mode, `value`, `defaultValue` and `onChange` are not used. To control it, pass `rangeValue={{ start, end }}` (leave `end` out while only the start is picked) and update it in `onRangeChange` from `start.gregorian` and `end?.gregorian`. The calendar opens on the month of the start.
 
+The ends are drawn like the selected day, joined by a band in the theme's `primary` color at 15% opacity, so a custom `primary` colors both. To style the band on its own, use `styles.rangeBand`. Screen readers hear "Start of range" and "End of range" at the ends (`'بداية الفترة'` and `'نهاية الفترة'` in Arabic), which `labels` can change:
+
+```tsx
+<HilalCalendar
+  selectionMode="range"
+  theme={{ primary: '#7C3AED' }}
+  styles={{
+    selectedDay: { borderRadius: 999 },
+    rangeBand: { backgroundColor: '#F59E0B', opacity: 0.25 },
+  }}
+  labels={{ rangeStart: 'Check-in', rangeEnd: 'Check-out' }}
+/>
+```
+
 ### Theme
 
 ```ts
