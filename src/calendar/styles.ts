@@ -14,6 +14,9 @@ const fill = {
 
 export type CalendarStyles = ReturnType<typeof createStyles>;
 
+/** Space above and below each day cell. */
+const SLOT_PADDING_VERTICAL = 2;
+
 /**
  * How far the phone's text size setting may grow the text of day cells,
  * weekday names and picker buttons, which have a fixed size: up to 1.3 a
@@ -121,6 +124,7 @@ const SLOTS = {
   secondaryDayText: 'secondaryText',
   pickerItem: 'pickerItem',
   pickerText: 'pickerText',
+  rangeBand: 'rangeBand',
 } as const;
 
 /**
@@ -241,7 +245,16 @@ function baseStyles(theme: HilalTheme) {
       // than 7 full-size cells, so today's ring never touches the
       // selected day.
       paddingHorizontal: 3,
-      paddingVertical: 2,
+      paddingVertical: SLOT_PADDING_VERTICAL,
+    },
+    // The band behind a range: as tall as a day, across the whole slot so
+    // neighbouring days join. A layer with opacity, so any color works.
+    rangeBand: {
+      backgroundColor: theme.primary,
+      bottom: SLOT_PADDING_VERTICAL,
+      opacity: 0.15,
+      position: 'absolute',
+      top: SLOT_PADDING_VERTICAL,
     },
     day: {
       alignItems: 'center',

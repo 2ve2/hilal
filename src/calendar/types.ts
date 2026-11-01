@@ -13,6 +13,18 @@ export type SelectedDate = {
   formatted: { gregorian: string; hijri: string };
 };
 
+/** A range of days picked in the calendar (`selectionMode="range"`). */
+export type SelectedRange = {
+  start: SelectedDate;
+  /** Null while only the start is picked. */
+  end: SelectedDate | null;
+  /** Days in the range, both ends included, or null while `end` is null. */
+  days: number | null;
+};
+
+/** A range to show as picked. Leave `end` out while only the start is picked. */
+export type DateRange = { start: Date; end?: Date | null };
+
 type ViewSlot = StyleProp<ViewStyle>;
 type TextSlot = StyleProp<TextStyle>;
 
@@ -54,6 +66,8 @@ export type HilalStyles = {
   todayDayText?: TextSlot;
   /** Both texts of a disabled day. */
   disabledDayText?: TextSlot;
+  /** The band behind the days of a picked range. */
+  rangeBand?: ViewSlot;
   /** Each month or year in the month and year picker. */
   pickerItem?: ViewSlot;
   pickerText?: TextSlot;
@@ -70,6 +84,10 @@ export type HilalLabels = {
   gregorian?: string;
   /** Read by screen readers after today's date. */
   today?: string;
+  /** Read after the first day of a picked range. */
+  rangeStart?: string;
+  /** Read after the last day of a picked range. */
+  rangeEnd?: string;
   /** Read after the current month in the month picker. */
   thisMonth?: string;
   /** Read after the current year in the year picker. */
@@ -94,6 +112,19 @@ export type HilalCalendarProps = {
   defaultValue?: Date;
   /** Called when the user picks a day. */
   onChange?: (date: SelectedDate) => void;
+
+  /**
+   * 'single' (default) picks one day. 'range' picks a start and an end:
+   * the first press picks the start, the second the end, and a third
+   * starts over. A range never crosses a disabled day.
+   */
+  selectionMode?: 'single' | 'range';
+  /** Picked range (controlled), with `selectionMode="range"`. */
+  rangeValue?: DateRange | null;
+  /** Initially picked range (uncontrolled), with `selectionMode="range"`. */
+  defaultRangeValue?: DateRange;
+  /** Called when the user changes the range, after each press. */
+  onRangeChange?: (range: SelectedRange) => void;
 
   /** Calendar of the month grid. Default 'hijri'. */
   calendar?: CalendarType;
