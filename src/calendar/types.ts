@@ -120,7 +120,10 @@ export type HilalCalendarProps = {
    * `value`, `defaultValue` and `onChange` are not used.
    */
   selectionMode?: 'single' | 'range';
-  /** Picked range (controlled), with `selectionMode="range"`. */
+  /**
+   * Picked range (controlled), with `selectionMode="range"`. `null` shows
+   * no range.
+   */
   rangeValue?: DateRange | null;
   /** Initially picked range (uncontrolled), with `selectionMode="range"`. */
   defaultRangeValue?: DateRange;

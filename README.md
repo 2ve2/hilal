@@ -105,7 +105,7 @@ The [example app](example) shows every feature side by side. Run it with `yarn e
 | `defaultValue`          | `Date`                                               |                                     | Initially selected day (uncontrolled).                                                                                                                                  |
 | `onChange`              | `(date: SelectedDate) => void`                       |                                     | Called when the user picks a day.                                                                                                                                       |
 | `selectionMode`         | `'single' \| 'range'`                                | `'single'`                          | Pick one day, or a range. See [Range selection](#range-selection).                                                                                                      |
-| `rangeValue`            | `DateRange \| null`                                  |                                     | Picked range (controlled).                                                                                                                                              |
+| `rangeValue`            | `DateRange \| null`                                  |                                     | Picked range (controlled), or `null` for none.                                                                                                                          |
 | `defaultRangeValue`     | `DateRange`                                          |                                     | Initially picked range (uncontrolled).                                                                                                                                  |
 | `onRangeChange`         | `(range: SelectedRange) => void`                     |                                     | Called after each press in range mode.                                                                                                                                  |
 | `calendar`              | `'hijri' \| 'gregorian'`                             | `'hijri'`                           | Calendar of the month grid. The grid follows this prop when it changes.                                                                                                 |
@@ -141,7 +141,7 @@ const [range, setRange] = useState<SelectedRange>();
 <HilalCalendar selectionMode="range" onRangeChange={setRange} />;
 ```
 
-The first press picks the start and the second the end. A third press starts a new range, and so does a press before the start. A range never crosses a day disabled by `isDateDisabled`: a press past one starts a new range there. `onRangeChange` is called after every press:
+The first press picks the start and the second the end; pressing the start again picks a one-day range. A third press starts a new range, and so does a press before the start. A range never crosses a day disabled by `isDateDisabled`: a press past one starts a new range there. `onRangeChange` is called after every press:
 
 ```ts
 type SelectedRange = {
@@ -151,7 +151,7 @@ type SelectedRange = {
 };
 ```
 
-In range mode, `value`, `defaultValue` and `onChange` are not used. To control it, pass `rangeValue={{ start, end }}` (leave `end` out while only the start is picked) and update it in `onRangeChange` from `start.gregorian` and `end?.gregorian`. The calendar opens on the month of the start.
+In range mode, `value`, `defaultValue` and `onChange` are not used. To control it, pass `rangeValue={{ start, end }}` (leave `end` out while only the start is picked, or pass `null` for no range) and update it in `onRangeChange` from `start.gregorian` and `end?.gregorian`. The calendar opens on the month of the start.
 
 The ends are drawn like the selected day, joined by a band in the theme's `primary` color at 15% opacity, so a custom `primary` colors both. To style the band on its own, use `styles.rangeBand`. Screen readers hear "Start of range" and "End of range" at the ends (`'بداية الفترة'` and `'نهاية الفترة'` in Arabic), which `labels` can change:
 
