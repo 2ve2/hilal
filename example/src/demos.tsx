@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   HilalCalendar,
+  HilalCalendarModal,
   type Locale,
   type SelectedDate,
   type SelectedRange,
@@ -128,6 +130,38 @@ function RangeDemo({ locale }: { locale: Locale }) {
           <Text style={styles.placeholder}>Pick a start and an end day</Text>
         )}
       </View>
+    </View>
+  );
+}
+
+function ModalDemo({ locale }: { locale: Locale }) {
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState<SelectedDate>();
+  const insets = useSafeAreaInsets();
+  return (
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => setOpen(true)}
+        style={({ pressed }) => [styles.openButton, pressed && styles.pressed]}
+      >
+        <Text style={styles.openButtonText}>
+          {date
+            ? date.formatted.hijri
+            : locale === 'ar'
+              ? 'اختر تاريخ الموعد'
+              : 'Pick an appointment date'}
+        </Text>
+      </Pressable>
+      <HilalCalendarModal
+        visible={open}
+        locale={locale}
+        value={date?.gregorian}
+        title={locale === 'ar' ? 'تاريخ الموعد' : 'Appointment date'}
+        bottomInset={insets.bottom}
+        onConfirm={setDate}
+        onClose={() => setOpen(false)}
+      />
     </View>
   );
 }
@@ -278,6 +312,22 @@ ${Object.entries(violet)
     Component: RangeDemo,
   },
   {
+    id: 'modal',
+    title: () => 'Modal',
+    description: () =>
+      'The calendar in a sheet with Cancel and Done. The date is only saved on Done.',
+    dark: 'auto',
+    code: (locale) =>
+      `const [open, setOpen] = useState(false);\n\n` +
+      `<HilalCalendarModal${locale === 'en' ? '\n  locale="en"' : ''}\n` +
+      `  visible={open}\n` +
+      `  value={date?.gregorian}\n` +
+      `  bottomInset={insets.bottom}\n` +
+      `  onConfirm={setDate}\n` +
+      `  onClose={() => setOpen(false)}\n/>`,
+    Component: ModalDemo,
+  },
+  {
     id: 'controlled',
     title: () => 'Controlled',
     description: () =>
@@ -291,6 +341,22 @@ ${Object.entries(violet)
 ];
 
 const styles = StyleSheet.create({
+  openButton: {
+    alignItems: 'center',
+    backgroundColor: '#0F766E',
+    borderRadius: 14,
+    justifyContent: 'center',
+    minHeight: 52,
+    paddingHorizontal: 16,
+  },
+  openButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  pressed: {
+    opacity: 0.8,
+  },
   output: {
     backgroundColor: '#0F172A',
     borderRadius: 16,
