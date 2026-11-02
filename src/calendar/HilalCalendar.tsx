@@ -50,7 +50,9 @@ import {
 } from './month';
 import { PickerGrid, type PickerGridItem } from './PickerGrid';
 import {
+  checkRangeLimits,
   nextRange,
+  outsideRangeLimits,
   rangeLength,
   rangePosition,
   type DayRangeSelection,
@@ -211,6 +213,8 @@ export function HilalCalendar({
   rangeValue,
   defaultRangeValue,
   onRangeChange,
+  minRangeDays,
+  maxRangeDays,
   calendar: calendarProp = 'hijri',
   onCalendarChange,
   showCalendarToggle = true,
@@ -302,6 +306,7 @@ export function HilalCalendar({
 
   // Range selection: controlled through `rangeValue`, otherwise internal.
   const rangeMode = selectionMode === 'range';
+  const rangeLimits = checkRangeLimits(minRangeDays, maxRangeDays);
   const [internalRange, setInternalRange] = useState(() =>
     rangeOfDates(defaultRangeValue)
   );
@@ -454,7 +459,8 @@ export function HilalCalendar({
       const next = nextRange(
         pickedRange,
         epochDay,
-        isDateDisabled && ((day) => isDateDisabled(dateOf(day)))
+        isDateDisabled && ((day) => isDateDisabled(dateOf(day))),
+        rangeLimits
       );
       if (rangeValue === undefined) {
         setInternalRange(next);
@@ -797,6 +803,17 @@ export function HilalCalendar({
                     key={cell.epochDay}
                     {...cell}
                     accessibilityLabel={dayLabel(cell)}
+                    // After the start, days that would make the range too
+                    // short or too long can't be pressed.
+                    disabled={
+                      cell.disabled ||
+                      (rangeMode &&
+                        outsideRangeLimits(
+                          pickedRange,
+                          cell.epochDay,
+                          rangeLimits
+                        ))
+                    }
                     selected={
                       rangeMode
                         ? isRangeEnd(rangePosition(pickedRange, cell.epochDay))

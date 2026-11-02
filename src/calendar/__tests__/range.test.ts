@@ -1,6 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { nextRange, rangeLength, rangePosition } from '../range';
+import {
+  checkRangeLimits,
+  nextRange,
+  outsideRangeLimits,
+  rangeLength,
+  rangePosition,
+} from '../range';
 
 describe('nextRange', () => {
   it('picks the start, then the end', () => {
@@ -50,5 +56,65 @@ describe('rangeLength', () => {
     expect(rangeLength({ start: 10, end: 13 })).toBe(4);
     expect(rangeLength({ start: 10, end: 10 })).toBe(1);
     expect(rangeLength({ start: 10 })).toBeNull();
+  });
+});
+
+describe('range limits', () => {
+  const limits = { min: 3, max: 5 };
+
+  it('ends a range only within the limits', () => {
+    // 10 to 11 is 2 days, 10 to 12 is 3, 10 to 14 is 5, 10 to 15 is 6.
+    expect(nextRange({ start: 10 }, 11, undefined, limits)).toEqual({
+      start: 11,
+    });
+    expect(nextRange({ start: 10 }, 12, undefined, limits)).toEqual({
+      start: 10,
+      end: 12,
+    });
+    expect(nextRange({ start: 10 }, 14, undefined, limits)).toEqual({
+      start: 10,
+      end: 14,
+    });
+    expect(nextRange({ start: 10 }, 15, undefined, limits)).toEqual({
+      start: 15,
+    });
+    // Pressing the start again can't make a one-day range under a minimum.
+    expect(nextRange({ start: 10 }, 10, undefined, limits)).toEqual({
+      start: 10,
+    });
+  });
+
+  it('marks the days after the start that are too close or too far', () => {
+    const outside = [9, 10, 11, 12, 13, 14, 15].filter((d) =>
+      outsideRangeLimits({ start: 10 }, d, limits)
+    );
+    expect(outside).toEqual([11, 15]);
+    // Without a start, or once the range is complete, every day can be
+    // pressed.
+    expect(outsideRangeLimits(undefined, 11, limits)).toBe(false);
+    expect(outsideRangeLimits({ start: 10, end: 12 }, 20, limits)).toBe(false);
+  });
+
+  it('checks the limits', () => {
+    expect(checkRangeLimits(undefined, undefined)).toEqual({
+      min: 1,
+      max: Infinity,
+    });
+    expect(checkRangeLimits(2, 14)).toEqual({ min: 2, max: 14 });
+    expect(checkRangeLimits(3, 3)).toEqual({ min: 3, max: 3 });
+    for (const [min, max] of [
+      [0, 5],
+      [2.5, 5],
+      [Number.NaN, 5],
+      [1, 0],
+      [1, 4.5],
+    ] as const) {
+      expect(() => checkRangeLimits(min, max)).toThrow(
+        /must be a whole number/
+      );
+    }
+    expect(() => checkRangeLimits(5, 3)).toThrow(
+      'minRangeDays (5) is larger than maxRangeDays (3)'
+    );
   });
 });

@@ -937,6 +937,89 @@ describe('HilalCalendar', () => {
       expect(bands()).toHaveLength(4);
     });
 
+    it('disables the ends that would break minRangeDays and maxRangeDays', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          selectionMode="range"
+          minRangeDays={3}
+          maxRangeDays={5}
+          onRangeChange={onRangeChange}
+        />
+      );
+      // Nothing is disabled before a start is picked.
+      expect(ramadan('١٦')).toBeEnabled();
+      expect(ramadan('٢٥')).toBeEnabled();
+
+      await fireEvent.press(ramadan('١٥'));
+      // 15 to 16 would be 2 days, 15 to 20 would be 6.
+      expect(ramadan('١٦')).toBeDisabled();
+      expect(ramadan('١٧')).toBeEnabled();
+      expect(ramadan('١٩')).toBeEnabled();
+      expect(ramadan('٢٠')).toBeDisabled();
+      // Days before the start can still start over.
+      expect(ramadan('١٠')).toBeEnabled();
+
+      await fireEvent.press(ramadan('١٩'));
+      expect(onRangeChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ days: 5 })
+      );
+      // A complete range: every day can start a new one.
+      expect(ramadan('١٦')).toBeEnabled();
+      expect(ramadan('٢٥')).toBeEnabled();
+    });
+
+    it('keeps the start when it is pressed again under a minimum', async () => {
+      const onRangeChange = jest.fn();
+      await render(
+        <HilalCalendar
+          defaultValue={MARCH_25}
+          selectionMode="range"
+          minRangeDays={2}
+          onRangeChange={onRangeChange}
+        />
+      );
+      await fireEvent.press(ramadan('١٥'));
+      await fireEvent.press(ramadan('١٥'));
+      expect(onRangeChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ end: null, days: null })
+      );
+      expect(ramadan('١٥')).toBeSelected();
+    });
+
+    it('applies the limits to a controlled start', async () => {
+      await render(
+        <HilalCalendar
+          selectionMode="range"
+          rangeValue={{ start: new Date(2024, 2, 25) }}
+          maxRangeDays={2}
+        />
+      );
+      expect(ramadan('١٦')).toBeEnabled();
+      expect(ramadan('١٧')).toBeDisabled();
+    });
+
+    it('rejects limits that make no sense', async () => {
+      // React logs the error thrown while rendering; keep the output clean.
+      const logError = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      await expect(
+        render(
+          <HilalCalendar
+            selectionMode="range"
+            minRangeDays={5}
+            maxRangeDays={3}
+          />
+        )
+      ).rejects.toThrow('minRangeDays (5) is larger than maxRangeDays (3)');
+      await expect(
+        render(<HilalCalendar selectionMode="range" minRangeDays={0} />)
+      ).rejects.toThrow('minRangeDays must be a whole number of at least 1');
+      logError.mockRestore();
+    });
+
     it('leaves single selection as it was', async () => {
       await render(<HilalCalendar defaultValue={MARCH_25} />);
       expect(bands()).toHaveLength(0);
