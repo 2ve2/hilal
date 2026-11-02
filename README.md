@@ -18,6 +18,7 @@ iOS, Android, web and Expo Go. Zero dependencies. Arabic-first.
 - **Umm al-Qura**, the official calendar of Saudi Arabia, tested against ICU on every day from 1937 to 2077.
 - **Hijri and Gregorian together**: switch the grid between them, and every day also shows its date in the other calendar.
 - **One day or a range**: pick a single day, or a start and an end for bookings and leave.
+- **Inline or in a sheet**: `<HilalCalendarModal />` opens the same calendar in a bottom sheet with Cancel and Done.
 - **Arabic-first**: Arabic month and day names, Arabic-Indic digits (`١٢٣`), proper right-to-left layout. English with Latin digits is one prop away.
 - **Cross-platform**: pure TypeScript and React Native core components. The same code runs on iOS, Android, the web and in Expo Go, with no native modules.
 - **Zero runtime dependencies**: no moment, no dayjs, no `Intl` calendars at runtime.
@@ -239,7 +240,42 @@ The day states apply to day cells only, not to the month and year picker.
 <HilalCalendar labels={{ hijri: 'هـ', gregorian: 'م' }} />
 ```
 
-The keys are `hijri`, `gregorian`, `today`, `thisMonth`, `thisYear`, `rangeStart`, `rangeEnd`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`, `chooseMonth` and `chooseYear`.
+The keys are `hijri`, `gregorian`, `today`, `thisMonth`, `thisYear`, `rangeStart`, `rangeEnd`, `previousMonth`, `nextMonth`, `previousYear`, `nextYear`, `previousYears`, `nextYears`, `chooseMonth`, `chooseYear`, and for the modal `done`, `cancel` and `close`.
+
+## `<HilalCalendarModal />`
+
+The same calendar in a sheet that slides up from the bottom of the screen, with Cancel and Done. The picked date is only reported on Done; Cancel, a tap on the backdrop and Android's back button close it without a change. Each time it opens, it starts again from `value`.
+
+```tsx
+const [open, setOpen] = useState(false);
+const [date, setDate] = useState<SelectedDate>();
+const insets = useSafeAreaInsets(); // from react-native-safe-area-context
+
+<HilalCalendarModal
+  visible={open}
+  value={date?.gregorian}
+  title="Appointment date"
+  bottomInset={insets.bottom}
+  onConfirm={setDate}
+  onClose={() => setOpen(false)}
+/>;
+```
+
+It takes every `<HilalCalendar />` prop (`locale`, `theme`, `minDate`, `selectionMode` and so on) except the selection ones, which it replaces:
+
+| Prop             | Type                                    | Default | Description                                                                                                                                                              |
+| ---------------- | --------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `visible`        | `boolean`                               |         | Whether the sheet is open.                                                                                                                                               |
+| `onClose`        | `() => void`                            |         | Called on Cancel, the backdrop, Android's back button and after Done. Set `visible` to `false` in it.                                                                    |
+| `value`          | `Date`                                  |         | The day picked when the sheet opens.                                                                                                                                     |
+| `onConfirm`      | `(date: SelectedDate) => void`          |         | Called on Done with the picked day. Done is disabled until a day is picked.                                                                                              |
+| `rangeValue`     | `DateRange \| null`                     |         | With `selectionMode="range"`: the range picked when the sheet opens.                                                                                                     |
+| `onConfirmRange` | `(range: { start, end, days }) => void` |         | With `selectionMode="range"`: called on Done with the complete range. Done is disabled until the end is picked.                                                          |
+| `title`          | `string`                                |         | Title between Cancel and Done.                                                                                                                                           |
+| `bottomInset`    | `number`                                | `0`     | Extra space at the bottom for the home indicator or the navigation bar, for example `useSafeAreaInsets().bottom`. Hilal has no dependencies, so it can't read it itself. |
+| `sheetStyle`     | `StyleProp<ViewStyle>`                  |         | Style of the sheet.                                                                                                                                                      |
+
+The buttons follow the theme (Done in `primary`) and the reading direction: Cancel comes first, on the right in Arabic. Their texts are the `done` and `cancel` labels, and screen readers call the backdrop by the `close` label. On a screen too short for the calendar, the calendar scrolls inside the sheet. The sheet is at most 520 wide on tablets and the web, and opens without animation when the system asks to reduce motion.
 
 ## Core API
 
@@ -275,7 +311,7 @@ Without options, `formatHijri` returns `'١ رمضان ١٤٤٦ هـ'` (Arabic, 
 
 `HijriDate` is `{ year: number; month: number; day: number }` with `month` from 1 to 12. Dates outside the supported range (1937-03-14 to 2077-11-16) throw a `RangeError`.
 
-All types are exported too: `HilalCalendarProps`, `SelectedDate`, `SelectedRange`, `DateRange`, `HilalTheme`, `ThemeProp`, `HilalStyles`, `HilalLabels`, `HijriDate`, `HijriConversionOptions`, `FormatHijriOptions`, `CalendarType`, `Locale`, `Digits` and `WeekdayFormat`.
+All types are exported too: `HilalCalendarProps`, `HilalCalendarModalProps`, `SelectedDate`, `SelectedRange`, `DateRange`, `HilalTheme`, `ThemeProp`, `HilalStyles`, `HilalLabels`, `HijriDate`, `HijriConversionOptions`, `FormatHijriOptions`, `CalendarType`, `Locale`, `Digits` and `WeekdayFormat`.
 
 Dates are always handled as **local calendar days**. A day is never derived from a UTC timestamp, so the result doesn't depend on the time of day or the time zone offset.
 
@@ -328,7 +364,6 @@ Planned next:
 
 - Event dots on days
 - Swipe between months
-- Ready-made bottom sheet and modal variants
 
 ## Contributing
 
