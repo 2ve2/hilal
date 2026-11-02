@@ -111,6 +111,7 @@ function RangeDemo({ locale }: { locale: Locale }) {
       <HilalCalendar
         locale={locale}
         selectionMode="range"
+        maxRangeDays={14}
         onRangeChange={setRange}
       />
       <View style={styles.output}>
@@ -265,11 +266,15 @@ ${Object.entries(violet)
     id: 'range-selection',
     title: () => 'Range',
     description: () =>
-      'Pick a start and an end. A third press starts over; a range never crosses a disabled day.',
+      'Pick a start and an end, up to 14 days. A third press starts over; a range never crosses a disabled day.',
     dark: 'auto',
     code: (locale) =>
       `const [range, setRange] = useState<SelectedRange>();\n\n` +
-      jsx(locale, ['selectionMode="range"', 'onRangeChange={setRange}']),
+      jsx(locale, [
+        'selectionMode="range"',
+        'maxRangeDays={14}',
+        'onRangeChange={setRange}',
+      ]),
     Component: RangeDemo,
   },
   {
