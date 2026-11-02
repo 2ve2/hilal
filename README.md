@@ -108,6 +108,8 @@ The [example app](example) shows every feature side by side. Run it with `yarn e
 | `rangeValue`            | `DateRange \| null`                                  |                                     | Picked range (controlled), or `null` for none.                                                                                                                          |
 | `defaultRangeValue`     | `DateRange`                                          |                                     | Initially picked range (uncontrolled).                                                                                                                                  |
 | `onRangeChange`         | `(range: SelectedRange) => void`                     |                                     | Called after each press in range mode.                                                                                                                                  |
+| `minRangeDays`          | `number`                                             | `1`                                 | Fewest days in a range, both ends included.                                                                                                                             |
+| `maxRangeDays`          | `number`                                             | no limit                            | Most days in a range, both ends included.                                                                                                                               |
 | `calendar`              | `'hijri' \| 'gregorian'`                             | `'hijri'`                           | Calendar of the month grid. The grid follows this prop when it changes.                                                                                                 |
 | `onCalendarChange`      | `(calendar) => void`                                 |                                     | Called when the user switches calendars with the toggle.                                                                                                                |
 | `showCalendarToggle`    | `boolean`                                            | `true`                              | Show the Hijri / Gregorian toggle.                                                                                                                                      |
@@ -150,6 +152,8 @@ type SelectedRange = {
   days: number | null; // both ends included: 1 for a one-day range
 };
 ```
+
+To limit the length, pass `minRangeDays` and `maxRangeDays`. They count both ends like `days`, so a stay of 2 to 14 nights is `minRangeDays={3}` and `maxRangeDays={15}`. After the start is picked, the days that would make the range too short or too long can't be pressed; a day before the start still starts over. Limits that aren't whole numbers of at least 1, or a minimum above the maximum, throw a `RangeError`.
 
 In range mode, `value`, `defaultValue` and `onChange` are not used. To control it, pass `rangeValue={{ start, end }}` (leave `end` out while only the start is picked, or pass `null` for no range) and update it in `onRangeChange` from `start.gregorian` and `end?.gregorian`. The calendar opens on the month of the start.
 
