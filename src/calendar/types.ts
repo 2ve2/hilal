@@ -219,3 +219,43 @@ export type HilalCalendarProps = {
    */
   maxFontSizeMultiplier?: number;
 };
+
+/** HilalCalendarModal's props: the calendar's, plus the sheet's own. */
+export type HilalCalendarModalProps = Omit<
+  HilalCalendarProps,
+  | 'value'
+  | 'defaultValue'
+  | 'onChange'
+  | 'rangeValue'
+  | 'defaultRangeValue'
+  | 'onRangeChange'
+> & {
+  /** Whether the sheet is open. */
+  visible: boolean;
+  /**
+   * Called to close the sheet: Cancel, the backdrop, Android's back
+   * button, and after Done. Set `visible` to false in it.
+   */
+  onClose: () => void;
+  /** The day picked when the sheet opens (single selection). */
+  value?: Date;
+  /** The range picked when the sheet opens (`selectionMode="range"`). */
+  rangeValue?: DateRange | null;
+  /** Called on Done with the picked day (single selection). */
+  onConfirm?: (date: SelectedDate) => void;
+  /** Called on Done with the complete range (`selectionMode="range"`). */
+  onConfirmRange?: (range: {
+    start: SelectedDate;
+    end: SelectedDate;
+    days: number;
+  }) => void;
+  /** Title between Cancel and Done. */
+  title?: string;
+  /**
+   * Extra space under the calendar, for the home indicator or the
+   * navigation bar, for example `useSafeAreaInsets().bottom`. Default 0.
+   */
+  bottomInset?: number;
+  /** Style of the sheet. */
+  sheetStyle?: StyleProp<ViewStyle>;
+};

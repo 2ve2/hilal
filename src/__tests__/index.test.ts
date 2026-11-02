@@ -6,6 +6,7 @@ describe('package entry', () => {
   it('exports the core API and the calendar', () => {
     expect(Object.keys(hilal).sort()).toEqual([
       'HilalCalendar',
+      'HilalCalendarModal',
       'darkTheme',
       'formatHijri',
       'getHijriMonthLength',

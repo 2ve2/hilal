@@ -70,14 +70,14 @@ const TOGGLE_HIT_SLOP = { top: 8, bottom: 8 };
 /** What the grid shows: the days of a month, or the month or year picker. */
 type View_ = 'days' | 'months' | 'years';
 
-function epochDayOf(date: Date | undefined) {
+export function epochDayOf(date: Date | undefined) {
   return date instanceof Date && !Number.isNaN(date.getTime())
     ? epochDayOfLocalDate(date)
     : undefined;
 }
 
 /** A DateRange as epoch days, its ends in order; undefined without a start. */
-function rangeOfDates(
+export function rangeOfDates(
   dates: DateRange | undefined
 ): DayRangeSelection | undefined {
   const start = epochDayOf(dates?.start);
@@ -96,7 +96,7 @@ function isRangeEnd(position: RangePosition | null) {
   return position === 'start' || position === 'end' || position === 'single';
 }
 
-function selectedDateOf(
+export function selectedDateOf(
   epochDay: number,
   locale: Locale,
   digits: Digits,

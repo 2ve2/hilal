@@ -1,4 +1,5 @@
 export { HilalCalendar } from './HilalCalendar';
+export { HilalCalendarModal } from './HilalCalendarModal';
 export {
   darkTheme,
   lightTheme,
@@ -7,6 +8,7 @@ export {
 } from './theme';
 export type {
   DateRange,
+  HilalCalendarModalProps,
   HilalCalendarProps,
   HilalLabels,
   HilalStyles,
