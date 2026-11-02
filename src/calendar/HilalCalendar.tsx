@@ -1,11 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-  I18nManager,
-  Pressable,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import { Pressable, Text, useColorScheme, View } from 'react-native';
 
 import { checkAdjustment, hijriOfEpochDay } from '../core/convert';
 import {
@@ -48,6 +42,8 @@ import {
   type CalendarMonth,
   type DayRange,
 } from './month';
+import { readingDirection } from './direction';
+import { useLabels } from './labels';
 import { PickerGrid, type PickerGridItem } from './PickerGrid';
 import {
   checkRangeLimits,
@@ -65,51 +61,7 @@ import {
   withSlots,
 } from './styles';
 import { resolveTheme } from './theme';
-import type {
-  DateRange,
-  HilalCalendarProps,
-  HilalLabels,
-  SelectedDate,
-} from './types';
-
-const LABELS: Record<Locale, Required<HilalLabels> & { separator: string }> = {
-  ar: {
-    hijri: 'هجري',
-    gregorian: 'ميلادي',
-    today: 'اليوم',
-    rangeStart: 'بداية الفترة',
-    rangeEnd: 'نهاية الفترة',
-    thisMonth: 'هذا الشهر',
-    thisYear: 'هذه السنة',
-    previousMonth: 'الشهر السابق',
-    nextMonth: 'الشهر التالي',
-    previousYear: 'السنة السابقة',
-    nextYear: 'السنة التالية',
-    previousYears: 'السنوات السابقة',
-    nextYears: 'السنوات التالية',
-    chooseMonth: 'اختر الشهر والسنة',
-    chooseYear: 'اختر السنة',
-    separator: '، ',
-  },
-  en: {
-    hijri: 'Hijri',
-    gregorian: 'Gregorian',
-    today: 'Today',
-    rangeStart: 'Start of range',
-    rangeEnd: 'End of range',
-    thisMonth: 'This month',
-    thisYear: 'This year',
-    previousMonth: 'Previous month',
-    nextMonth: 'Next month',
-    previousYear: 'Previous year',
-    nextYear: 'Next year',
-    previousYears: 'Previous years',
-    nextYears: 'Next years',
-    chooseMonth: 'Choose month and year',
-    chooseYear: 'Choose year',
-    separator: ', ',
-  },
-};
+import type { DateRange, HilalCalendarProps, SelectedDate } from './types';
 
 // More below than above, so it never meets the toggle's.
 const TITLE_HIT_SLOP = { top: 8, bottom: 10, left: 6, right: 6 };
@@ -238,35 +190,14 @@ export function HilalCalendar({
 }: HilalCalendarProps) {
   const adjustment = checkAdjustment(hijriAdjustment, 'HilalCalendar');
   const digits = digitsProp ?? defaultDigits(locale);
-  // Compared by value, so an inline object doesn't recompute every day.
-  const labelsKey = JSON.stringify(labelsProp);
-  const labels = useMemo(
-    () => {
-      const merged = { ...LABELS[locale] };
-      for (const [key, text] of Object.entries(labelsProp ?? {})) {
-        // A label left undefined keeps the default.
-        if (text !== undefined) {
-          merged[key as keyof HilalLabels] = text;
-        }
-      }
-      return merged;
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [locale, labelsKey]
-  );
+  const labels = useLabels(locale, labelsProp);
   const cellFontScale = maxFontSizeMultiplier ?? MAX_CELL_FONT_SCALE;
   const headerFontScale = maxFontSizeMultiplier ?? MAX_HEADER_FONT_SCALE;
   // Today, this month and this year are only marked by a ring; screen
   // readers hear it at the end of the label instead.
   const withCurrent = (label: string, current: boolean, text: string) =>
     current ? `${label}${labels.separator}${text}` : label;
-  // React Native Web leaves I18nManager.isRTL undefined, not false.
-  const appRTL = I18nManager.isRTL === true;
-  const rtl =
-    direction === 'rtl' ||
-    (direction === 'auto' && (appRTL || locale === 'ar'));
-  // React Native already mirrors 'row' when the whole app is RTL.
-  const row = rtl === appRTL ? 'row' : 'row-reverse';
+  const { rtl, row } = readingDirection(direction, locale);
 
   const colorScheme = useColorScheme();
   const themeKey =

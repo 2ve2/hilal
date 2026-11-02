@@ -103,6 +103,12 @@ export type HilalLabels = {
   chooseMonth?: string;
   /** The year title button in the month picker. */
   chooseYear?: string;
+  /** HilalCalendarModal's button that confirms the picked date. */
+  done?: string;
+  /** HilalCalendarModal's button that closes it without a change. */
+  cancel?: string;
+  /** Read by screen readers on HilalCalendarModal's backdrop. */
+  close?: string;
 };
 
 export type HilalCalendarProps = {
