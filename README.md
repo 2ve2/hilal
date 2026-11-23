@@ -324,11 +324,10 @@ Gregorian dates never change. The shift moves the whole calendar, so months keep
 
 ## Roadmap
 
-Planned next:
+Hilal does what it set out to do. These ideas are open for contributions; open an issue first to talk about the design:
 
 - Event dots on days
 - Swipe between months
-- Ready-made bottom sheet and modal variants
 
 ## Contributing
 
