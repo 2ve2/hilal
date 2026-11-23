@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/2ve2/hilal/compare/v0.2.0...v0.3.0) (2026-11-23)
+
+### Features
+
+- **calendar:** add minRangeDays and maxRangeDays ([0eb3804](https://github.com/2ve2/hilal/commit/0eb3804408d674aed3d8ee4a317c64a51cdf4306))
+- **calendar:** add range selection ([593ea11](https://github.com/2ve2/hilal/commit/593ea11a3f4d627d154a43725ca3ce226d9dd3b6))
+- **example:** add a range selection demo ([2ab6f43](https://github.com/2ve2/hilal/commit/2ab6f43f2b2b7dddd894e7a683394bbb851b2edb))
+- **example:** limit the range demo to 14 days ([dee60b5](https://github.com/2ve2/hilal/commit/dee60b57f8ed1a4d08b509a6fcc07238654fe42c))
+
+### Performance Improvements
+
+- **calendar:** format picked dates on first read ([4501ce0](https://github.com/2ve2/hilal/commit/4501ce027c54659c476b09801494a2a6e299ac8a))
+
 ## [0.2.0](https://github.com/2ve2/hilal/compare/v0.1.0...v0.2.0) (2026-10-30)
 
 ### Features
