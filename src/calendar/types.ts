@@ -129,6 +129,18 @@ export type HilalCalendarProps = {
   defaultRangeValue?: DateRange;
   /** Called when the user changes the range, after each press. */
   onRangeChange?: (range: SelectedRange) => void;
+  /**
+   * Fewest days a range may have, both ends included (so 3 nights are 4
+   * days). After the start is picked, days that would make the range
+   * shorter can't be pressed. Default 1.
+   */
+  minRangeDays?: number;
+  /**
+   * Most days a range may have, both ends included. After the start is
+   * picked, days that would make the range longer can't be pressed.
+   * Default: no limit.
+   */
+  maxRangeDays?: number;
 
   /** Calendar of the month grid. Default 'hijri'. */
   calendar?: CalendarType;
