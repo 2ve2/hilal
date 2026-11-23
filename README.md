@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/banner.png" alt="Hilal هلال" width="720" />
+<img src="https://raw.githubusercontent.com/2ve2/hilal/main/docs/assets/banner.png" alt="Hilal هلال" width="720" />
 
 **A Hijri (Umm al-Qura) and Gregorian date picker for React Native.**
 iOS, Android, web and Expo Go. Zero dependencies. Arabic-first.
@@ -9,7 +9,7 @@ iOS, Android, web and Expo Go. Zero dependencies. Arabic-first.
 [![CI](https://github.com/2ve2/hilal/actions/workflows/ci.yml/badge.svg)](https://github.com/2ve2/hilal/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-<img src="docs/assets/demo.gif" alt="Hilal in action: switching between Hijri and Gregorian, picking a day, the month picker, English and a dark custom theme" width="380" />
+<img src="https://raw.githubusercontent.com/2ve2/hilal/main/docs/assets/demo.gif" alt="Hilal in action: switching between Hijri and Gregorian, picking a day, the month picker, English and a dark custom theme" width="380" />
 
 </div>
 
